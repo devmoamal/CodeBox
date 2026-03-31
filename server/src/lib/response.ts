@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { ContentfulStatusCode, StatusCode } from "hono/utils/http-status";
-import { ErrorCode, ErrorResponse, SuccessResponse } from "@CodeBox/shared";
+import { ErrorCode, ErrorResponse, SuccessResponse } from "@codebox/shared";
 
 class Response {
   static success<T>(

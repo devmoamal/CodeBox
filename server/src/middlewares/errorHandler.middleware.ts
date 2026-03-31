@@ -1,27 +1,42 @@
 import type { Context } from "hono";
-import { AppError, BadRequestError, ValidationError } from "@/lib/error";
+import {
+  AppError,
+  BadRequestError,
+  StorageRequestError,
+  ValidationError,
+} from "@/lib/error";
 import { logger } from "@/lib/logger";
 import Response from "@/lib/response";
 import { ZodError } from "zod";
+import { StorageError } from "@/lib/storage";
 
 export const errorHandler = (error: any, c: Context) => {
-  // Handle AppError
+  // Handle AppError (Custom application errors)
   if (error instanceof AppError) {
-    logger.error(error.message);
+    logger.error(`[AppError] ${error.message}`);
     return Response.error(c, error.code, error.message, error.status);
   }
 
-  // Handle unHandled zod errors
+  // Handle Zod Errors (Validation)
   if (error instanceof ZodError) {
-    throw new ValidationError();
+    const err = new ValidationError();
+    return Response.error(c, err.code, err.message, err.status);
   }
 
-  // Handle unHandled json errors
-  if (error.message.includes("JSON")) {
-    logger.error(error.message);
-    throw new BadRequestError("Invalid JSON");
+  // Handle Storage Utility Errors
+  if (error instanceof StorageError) {
+    const err = new StorageRequestError(error.message);
+    return Response.error(c, err.code, err.message, err.status);
   }
 
-  logger.error("[CRITICAL]", error.message);
+  // Handle JSON Parsing Errors
+  if (error.message?.includes("JSON")) {
+    logger.error(`[JSON Error] ${error.message}`);
+    const err = new BadRequestError("Invalid JSON");
+    return Response.error(c, err.code, err.message, err.status);
+  }
+
+  // Handle all other unhandled errors
+  logger.error(`[CRITICAL] ${error.stack || error.message}`);
   return Response.error(c, "SERVER_ERROR", "Internal Server Error", 500);
 };
