@@ -1,15 +1,15 @@
 {
   "name": "@codebox/shared",
-  "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "devDependencies": {
+    "typescript": "~5.7.3"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
+  "private": true,
+  "type": "module",
   "dependencies": {
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "typescript": "~5.7.2"
+    "zod": "^4.3.6"
   }
 }

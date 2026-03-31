@@ -1,3 +1,3 @@
-export { z } from "zod";
-
-// Shared validations — add your schemas here
+export * from "./common.schema";
+export * from "./file.schema";
+export * from "./project.schema";
