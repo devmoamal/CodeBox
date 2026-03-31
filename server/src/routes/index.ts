@@ -1,9 +1,8 @@
 import { Hono } from "hono";
+import apiRoute from "./api";
 
 const router = new Hono();
 
-// Add your routes here
-// Example:
-// router.route("/users", usersRoute);
+router.route("/api", apiRoute);
 
 export default router;
