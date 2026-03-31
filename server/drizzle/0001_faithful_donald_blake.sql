@@ -1,0 +1,1 @@
+ALTER TABLE `storage` ADD `is_folder` integer DEFAULT false NOT NULL;
