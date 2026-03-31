@@ -1,0 +1,22 @@
+info:
+  name: Create file
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{base_url}}/storage/d795e29e-f5b5-4899-991a-ade11296c924"
+  body:
+    type: json
+    data: |-
+      {
+        "path": "/moamal",
+        "content": "Hello, World!"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

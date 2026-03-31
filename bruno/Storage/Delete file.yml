@@ -1,0 +1,21 @@
+info:
+  name: Delete file
+  type: http
+  seq: 2
+
+http:
+  method: DELETE
+  url: "{{base_url}}/storage/d795e29e-f5b5-4899-991a-ade11296c924"
+  body:
+    type: json
+    data: |-
+      {
+        "path": "/moamal"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
