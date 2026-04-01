@@ -1,4 +1,4 @@
-import type { ErrorCode } from "@CodeBox/shared";
+import type { ErrorCode } from "@codebox/shared";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 export class AppError extends Error {
@@ -44,6 +44,12 @@ export class ForbiddenError extends AppError {
 export class BadRequestError extends AppError {
   constructor(message?: string) {
     super(message ? message : "Bad Request", 400, "BAD_REQUEST");
+  }
+}
+
+export class StorageRequestError extends AppError {
+  constructor(message?: string) {
+    super(message ? message : "Storage error", 400, "STORAGE_ERROR");
   }
 }
 

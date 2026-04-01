@@ -13,15 +13,10 @@ const envSchema = z.object({
   PORT: z.string().transform(Number).default(3000),
 
   // Database
-  POSTGRESQL_URL: isProduction
-    ? z.string().min(1, "POSTGRESQL_URL is required")
-    : z
-        .string()
-        .min(1)
-        .default("postgres://postgres:postgres@localhost:5432/CodeBox"),
+  DATABASE_URL: z.string().min(1).default("file:./storage/database/codebox.db"),
 
-  // Redis
-  REDIS_URL: z.string().default("redis://localhost:6379"),
+  // Storage
+  STORAGE_PATH: z.string().min(1).default("./storage/projects"),
 });
 
 const parse = envSchema.safeParse(process.env);

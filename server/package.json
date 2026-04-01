@@ -9,15 +9,15 @@
     "db:generate": "bunx drizzle-kit generate",
     "db:migrate": "bunx drizzle-kit migrate",
     "db:push": "bunx drizzle-kit push",
-    "db:studio": "bunx drizzle-kit studio"
+    "db:studio": "bunx drizzle-kit studio",
+    "test": "bun test --preload ./tests/setup.ts"
   },
   "dependencies": {
     "@codebox/shared": "workspace:*",
-    "hono": "^4.7.4",
     "drizzle-orm": "^0.39.3",
-    "zod": "^4.1.13",
-    "postgres": "^3.4.5",
-    "ioredis": "^5.4.2"
+    "hono": "^4.7.4",
+    "ioredis": "^5.4.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bun": "^1.2.4",

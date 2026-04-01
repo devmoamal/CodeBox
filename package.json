@@ -2,17 +2,17 @@
   "name": "codebox",
   "private": true,
   "workspaces": [
-    "admin",
     "client",
     "server",
     "shared"
   ],
   "scripts": {
-    "dev:admin": "bun run --filter @codebox/admin dev",
     "dev:client": "bun run --filter @codebox/client dev",
     "dev:server": "bun run --filter @codebox/server dev",
-    "build:admin": "bun run --filter @codebox/admin build",
     "build:client": "bun run --filter @codebox/client build",
     "build:server": "bun run --filter @codebox/server build"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

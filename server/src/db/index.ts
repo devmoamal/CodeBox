@@ -1,7 +1,17 @@
-import { drizzle } from "drizzle-orm/postgres-js";
+import { Database } from "bun:sqlite";
+import { drizzle } from "drizzle-orm/bun-sqlite";
 import { env } from "@/config/env.config";
-import postgres from "postgres";
+import fs from "node:fs";
+import path from "node:path";
 
-const client = postgres(env.POSTGRESQL_URL);
+const dbPath = env.DATABASE_URL.replace(/^file:/, "");
+const dbDir = path.dirname(dbPath);
 
-export const db = drizzle({ client });
+if (dbDir && !fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
+const sqlite = new Database(dbPath);
+
+export const db = drizzle({ client: sqlite });
+
