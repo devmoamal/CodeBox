@@ -1,16 +1,47 @@
-*,
-*::before,
-*::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import "tailwindcss";
+
+@theme {
+  /* Common Python Theme Colors */
+  --color-primary-blue: #306998;
+  --color-primary-yellow: #FFD43B;
+  --color-dark-bg: #1e1e1e;
+  --color-dark-panel: #252526;
+  --color-dark-border: #3c3c3c;
+  --color-dark-hover: #2a2d2e;
+  --color-dark-active: #37373d;
 }
 
-body {
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  :root {
+    background-color: var(--color-dark-bg);
+    color: #cccccc;
+    color-scheme: dark;
+  }
+}
+
+html, body, #root {
+  height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border: 1px solid #1e1e1e;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }

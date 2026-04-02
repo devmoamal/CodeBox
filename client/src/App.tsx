@@ -1,3 +1,6 @@
+import { RouterProvider } from "@tanstack/react-router";
+import { router } from "./router";
+
 export function App() {
-  return <div>CODEBOX Client</div>;
+  return <RouterProvider router={router} />;
 }
