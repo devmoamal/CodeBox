@@ -1,7 +1,8 @@
 import { db } from "@/db";
 import { projectsTable } from "@/db/schema";
 import { NewProject, Project, UpdateProject } from "@/db/types";
-import { eq } from "drizzle-orm";
+import { eq, count } from "drizzle-orm";
+import { PaginationParams } from "@codebox/shared";
 
 export class ProjectsRepository {
   async create(data: NewProject): Promise<Project> {
@@ -21,8 +22,23 @@ export class ProjectsRepository {
     return project;
   }
 
-  async listAll(): Promise<Project[]> {
-    return await db.select().from(projectsTable);
+  async listAll({
+    page,
+    limit,
+  }: PaginationParams): Promise<{ data: Project[]; total: number }> {
+    const offset = (page - 1) * limit;
+
+    const data = await db
+      .select()
+      .from(projectsTable)
+      .limit(limit)
+      .offset(offset);
+
+    const [totalCount] = await db
+      .select({ value: count() })
+      .from(projectsTable);
+
+    return { data, total: totalCount.value };
   }
 
   async update(id: string, data: UpdateProject): Promise<Project | undefined> {
