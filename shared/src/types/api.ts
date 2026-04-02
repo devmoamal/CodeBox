@@ -1,4 +1,4 @@
-import { API_ERROR_CODE } from "@/constants";
+import { API_ERROR_CODE } from "../constants";
 
 /**
  * Base API response
