@@ -1,11 +1,13 @@
 import {
   validateBody,
   validateParams,
+  validateQuery,
 } from "@/middlewares/validate.middleware";
 import {
   createProjectBodySchema,
   projectIdParamSchema,
   updateProjectBodySchema,
+  paginationQuerySchema,
 } from "@codebox/shared";
 import { Hono } from "hono";
 import { ProjectsService } from "@/services/projects.service";
@@ -18,8 +20,9 @@ const router = new Hono();
 /**
  * List all projects
  */
-router.get("/", async (c) => {
-  const projects = await ProjectsService.listAll();
+router.get("/", validateQuery(paginationQuerySchema), async (c) => {
+  const query = c.req.valid("query");
+  const projects = await ProjectsService.listAll(query);
   return Response.success(c, projects);
 });
 

@@ -7,6 +7,7 @@ import { Hono } from "hono";
 import {
   FileBodySchema,
   FileQuerySchema,
+  FileRenameSchema,
   projectIdParamSchema,
 } from "@codebox/shared";
 import { StorageService } from "@/services/storage.service";
@@ -27,10 +28,7 @@ router.get(
     const { path } = c.req.valid("query");
 
     if (path && path !== ".") {
-      const file = await StorageService.findByPathAndProjectId(path, project_id);
-      if (!file) throw new NotFoundError("File not found in this project");
-
-      const content = await StorageService.readContent(file.id!);
+      const content = await StorageService.readContent(project_id, path);
       return Response.success(c, { content });
     }
 
@@ -62,6 +60,32 @@ router.post(
 );
 
 /**
+ * Upload an external file to a project (Multipart).
+ */
+router.post(
+  "/:project_id/upload",
+  validateParams(projectIdParamSchema),
+  async (c) => {
+    const { project_id } = c.req.valid("param");
+    const body = await c.req.parseBody();
+    const file = body.file as File | Blob;
+    const path = body.path as string;
+
+    if (!file || !path) {
+      throw new BadRequestError("File and path are required");
+    }
+
+    const record = await StorageService.create(
+      project_id,
+      path,
+      file,
+      false
+    );
+    return Response.success(c, record, "File uploaded successfully", 201);
+  },
+);
+
+/**
  * Update the content of a file within a project.
  */
 router.put(
@@ -76,11 +100,24 @@ router.put(
       throw new BadRequestError("Content is required for updates");
     }
 
-    const file = await StorageService.findByPathAndProjectId(path, project_id);
-    if (!file) throw new NotFoundError("File not found in this project");
-
-    const updated = await StorageService.updateContent(file.id!, content);
+    const updated = await StorageService.updateContent(project_id, path, content);
     return Response.success(c, updated, "Content updated successfully");
+  },
+);
+
+/**
+ * Rename a file or folder within a project.
+ */
+router.put(
+  "/:project_id/rename",
+  validateParams(projectIdParamSchema),
+  validateBody(FileRenameSchema),
+  async (c) => {
+    const { project_id } = c.req.valid("param");
+    const { old_path, new_path } = c.req.valid("json");
+
+    const updated = await StorageService.move(project_id, old_path, new_path);
+    return Response.success(c, updated, "Resource renamed successfully");
   },
 );
 
@@ -97,10 +134,7 @@ router.delete(
 
     if (!path) throw new Error("Path is required for deletion");
 
-    const file = await StorageService.findByPathAndProjectId(path, project_id);
-    if (!file) throw new NotFoundError("File not found in this project");
-
-    await StorageService.delete(file.id!);
+    await StorageService.delete(project_id, path);
     return Response.success(c, null, "Resource deleted successfully");
   },
 );
