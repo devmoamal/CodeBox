@@ -51,7 +51,12 @@ export class Storage {
    * Checks if a file or folder exists.
    */
   static async exists(path: string) {
-    return await Bun.file(this.resolvePath(path)).exists();
+    try {
+      await stat(this.resolvePath(path));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
@@ -113,10 +118,17 @@ export class Storage {
 
   /**
    * Moves or renames a file/directory.
+   * If newPath is an existing directory, moves the source INTO that directory.
    */
   static async changeFileDir(oldPath: string, newPath: string) {
     const oldFullPath = this.resolvePath(oldPath);
-    const newFullPath = this.resolvePath(newPath);
+    let newFullPath = this.resolvePath(newPath);
+
+    // Check if destination is a folder
+    if (await this.isFolder(newPath)) {
+      newFullPath = join(newFullPath, basename(oldFullPath));
+    }
+
     const newParent = dirname(newFullPath);
 
     // Ensure destination directory exists
@@ -209,5 +221,48 @@ export class Storage {
     const ext = extname(path);
     if (!ext) return path;
     return path.slice(0, -ext.length);
+  }
+
+  /**
+   * Recursively lists all files and folders in a directory.
+   */
+  static async listRecursive(projectId: string) {
+    const projectPath = this.resolvePath(projectId);
+    const results: {
+      name: string;
+      path: string;
+      is_folder: boolean;
+      size: number;
+      created_at: Date;
+      updated_at: Date;
+    }[] = [];
+
+    const walk = async (currentPath: string) => {
+      const files = await readdir(currentPath, { withFileTypes: true });
+      for (const file of files) {
+        const fullPath = join(currentPath, file.name);
+        const relativePath = fullPath.slice(projectPath.length + 1);
+        const s = await stat(fullPath);
+
+        results.push({
+          name: file.name,
+          path: relativePath,
+          is_folder: file.isDirectory(),
+          size: s.size,
+          created_at: s.birthtime,
+          updated_at: s.mtime,
+        });
+
+        if (file.isDirectory()) {
+          await walk(fullPath);
+        }
+      }
+    };
+
+    if (await this.exists(projectId)) {
+      await walk(projectPath);
+    }
+
+    return results;
   }
 }
