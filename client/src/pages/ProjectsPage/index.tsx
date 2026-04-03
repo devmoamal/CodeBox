@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Plus, ArrowRight, ArrowLeft } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import { Dialog } from "@/components/ui/Dialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function ProjectsPage() {
   const [page, setPage] = useState(1);
@@ -28,58 +29,66 @@ export function ProjectsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg text-gray-200 p-8 font-sans">
+    <div className="min-h-screen bg-bg text-text p-8 font-sans transition-colors duration-300">
       <div className="max-w-4xl mx-auto">
-        <header className="flex items-center justify-between mb-8 pb-4 border-b border-dark-border">
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <span className="text-primary-blue px-2 py-1 rounded bg-blue-900/20">Code</span>
-            <span className="text-primary-yellow px-2 py-1 rounded bg-yellow-900/20">Box</span>
+        <header className="flex items-center justify-between mb-12 pb-6 border-b border-border/30">
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-0.5">
+            <span className="text-primary">Code</span>
+            <span className="text-accent">Box</span>
           </h1>
-          <button
-            onClick={() => setIsDialogOpen(true)}
-            className="flex items-center gap-2 bg-primary-blue hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors shadow-lg shadow-blue-500/20 active:scale-95"
-          >
-            <Plus size={18} /> New Project
-          </button>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            <div className="w-px h-6 bg-border mx-1" />
+            <button
+              onClick={() => setIsDialogOpen(true)}
+              className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg transition-all active:scale-95 text-sm font-medium"
+            >
+              <Plus size={18} /> New Project
+            </button>
+          </div>
         </header>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-blue"></div>
-            <span className="ml-3 text-gray-400">Loading projects...</span>
+          <div className="flex flex-col items-center justify-center py-24 space-y-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-accent"></div>
+            <span className="text-text-muted font-medium">Booting workspace...</span>
           </div>
         ) : (
           <div className="space-y-4">
             {data?.data.length === 0 ? (
-              <div className="text-center py-20 bg-dark-panel rounded-xl border border-dashed border-dark-border">
-                <p className="text-gray-500 mb-4">No projects found. Create one to get started.</p>
+              <div className="text-center py-32 bg-panel/30 backdrop-blur-sm rounded-2xl border border-dashed border-border/60 hover:border-accent/50 transition-colors">
+                <div className="bg-panel w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-border">
+                  <Plus size={24} className="text-accent" />
+                </div>
+                <h3 className="text-lg font-semibold text-text mb-1">No projects yet</h3>
+                <p className="text-text-muted mb-6">Create your first isolated workspace to begin coding.</p>
                 <button
                   onClick={() => setIsDialogOpen(true)}
-                  className="text-primary-blue hover:underline font-medium"
+                  className="text-primary hover:text-primary-hover hover:underline font-medium transition-colors"
                 >
-                  Create your first project
+                  Create a new project
                 </button>
               </div>
             ) : (
               data?.data.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-dark-panel border border-dark-border p-5 rounded-xl flex items-center justify-between hover:border-primary-blue/50 hover:bg-dark-hover/50 transition-all group shadow-sm hover:shadow-primary-blue/10"
+                  className="bg-panel border border-border p-5 rounded-xl flex items-center justify-between hover:border-primary/50 transition-all group"
                 >
                   <div>
-                    <h3 className="text-lg font-semibold text-white group-hover:text-primary-blue transition-colors">
+                    <h3 className="text-lg font-semibold text-text group-hover:text-primary transition-colors">
                       {project.name}
                     </h3>
-                    <p className="text-sm text-gray-400 mt-1">
+                    <p className="text-sm text-text-muted mt-1">
                       Created: {new Date(project.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <Link
                     to="/project/$projectId"
                     params={{ projectId: project.id }}
-                    className="flex items-center gap-2 bg-dark-hover hover:bg-primary-yellow/10 text-primary-yellow hover:text-yellow-400 px-4 py-2 rounded-lg font-medium transition-all"
+                    className="flex items-center gap-2 bg-hover hover:bg-active text-text px-4 py-2 rounded-lg text-sm font-medium transition-all"
                   >
-                    Open <ArrowRight size={18} />
+                    Open <ArrowRight size={16} />
                   </Link>
                 </div>
               ))
@@ -87,25 +96,25 @@ export function ProjectsPage() {
 
             {/* Pagination Controls */}
             {data && data.meta.totalPages > 1 && (
-              <div className="flex items-center justify-center gap-6 mt-12 pt-6 border-t border-dark-border/50">
+              <div className="flex items-center justify-center gap-6 mt-12 pt-8 border-t border-border">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page === 1}
-                  className="p-2 rounded-lg bg-dark-panel border border-dark-border hover:bg-dark-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-lg bg-panel border border-border hover:bg-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   aria-label="Previous page"
                 >
                   <ArrowLeft size={20} />
                 </button>
                 
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white">Page {data.meta.page}</span>
-                  <span className="text-sm text-gray-500">of {data.meta.totalPages}</span>
+                  <span className="text-sm font-medium text-text">Page {data.meta.page}</span>
+                  <span className="text-sm text-text-muted">of {data.meta.totalPages}</span>
                 </div>
 
                 <button
                   onClick={() => setPage((p) => Math.min(data.meta.totalPages, p + 1))}
                   disabled={page === data.meta.totalPages}
-                  className="p-2 rounded-lg bg-dark-panel border border-dark-border hover:bg-dark-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-lg bg-panel border border-border hover:bg-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   aria-label="Next page"
                 >
                   <ArrowRight size={20} />

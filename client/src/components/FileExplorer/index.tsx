@@ -170,10 +170,10 @@ export function FileExplorer({ projectId }: { projectId: string }) {
             onDragOver={(e) => isFolder && handleDragOver(e, node.path)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => isFolder && handleDrop(e, node.path)}
-            className={`flex items-center gap-1.5 px-2 py-1 text-sm cursor-pointer group transition-all ${
-              isActive ? "bg-primary-blue/20 text-blue-300 border-l-2 border-primary-blue" : "text-gray-300 hover:bg-dark-hover"
-            } ${isDragOver ? "bg-primary-blue/30 scale-[1.02] shadow-lg z-10" : ""}`}
-            style={{ paddingLeft: `${depth * 12 + 8}px` }}
+            className={`flex items-center gap-2.5 px-3 py-1.5 text-xs cursor-pointer group transition-all rounded-md mx-1.5 my-0.5 ${
+              isActive ? "bg-primary/15 text-primary font-medium" : "text-text-muted hover:bg-hover hover:text-text"
+            } ${isDragOver ? "bg-primary/20 ring-1 ring-primary/30" : ""}`}
+            style={{ paddingLeft: `${depth * 14 + 10}px` }}
             onClick={() => {
               if (isFolder) toggleFolder(node.path);
               else useAppStore.getState().openFile(node.path);
@@ -182,20 +182,26 @@ export function FileExplorer({ projectId }: { projectId: string }) {
           >
             <span className="w-4 flex justify-center shrink-0">
               {isFolder ? (
-                isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                isOpen ? <ChevronDown size={14} className="opacity-70" /> : <ChevronRight size={14} className="opacity-70" />
               ) : null}
             </span>
-            <span className={isFolder ? "text-primary-yellow" : "text-primary-blue"}>
-              {isFolder ? <Folder size={14} fill="currentColor" fillOpacity={0.2} /> : <File size={14} />}
+            <span className={isFolder ? "text-accent" : "text-primary"}>
+              {isFolder ? (
+                <Folder size={14} fill="currentColor" fillOpacity={0.2} strokeWidth={2.5} />
+              ) : (
+                <File size={14} fill="currentColor" fillOpacity={0.1} strokeWidth={2} />
+              )}
             </span>
-            <span className="truncate">{node.name}</span>
+            <span className={`truncate ${isActive ? "text-primary font-semibold" : ""}`}>
+              {node.name}
+            </span>
 
             {/* Actions Menu */}
-            <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-2 shrink-0 px-2 text-gray-500">
+            <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-2.5 shrink-0 px-2">
               {isFolder && (
-                <Plus size={14} className="hover:text-white" onClick={(e) => { e.stopPropagation(); handleAction("create_file", node.path); }} />
+                <Plus size={12} className="text-text-muted hover:text-text" onClick={(e) => { e.stopPropagation(); handleAction("create_file", node.path); }} />
               )}
-              <Trash2 size={14} className="hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleAction("delete", node.path); }} />
+              <Trash2 size={12} className="text-text-muted hover:text-red-500" onClick={(e) => { e.stopPropagation(); handleAction("delete", node.path); }} />
             </div>
           </div>
           {isFolder && isOpen && node.children && (
@@ -207,37 +213,39 @@ export function FileExplorer({ projectId }: { projectId: string }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-dark-panel rounded-xl border border-dark-border shadow-2xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-dark-border bg-dark-panel/50 backdrop-blur-sm shrink-0">
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Files</span>
-        <div className="flex gap-3">
-          <FilePlus size={14} className="cursor-pointer text-gray-500 hover:text-white transition-colors" onClick={() => handleAction("create_file")} />
-          <FolderPlus size={14} className="cursor-pointer text-gray-500 hover:text-white transition-colors" onClick={() => handleAction("create_folder")} />
+    <div className="flex flex-col h-full w-full bg-transparent overflow-hidden">
+      <div className="h-10 flex items-center px-4 shrink-0 bg-transparent">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Files</span>
+        </div>
+        <div className="flex gap-2.5 ml-auto">
+          <FilePlus size={14} className="cursor-pointer text-text-muted hover:text-text transition-colors" onClick={() => handleAction("create_file")} />
+          <FolderPlus size={14} className="cursor-pointer text-text-muted hover:text-text transition-colors" onClick={() => handleAction("create_folder")} />
         </div>
       </div>
       
       <div 
-        className={`flex-1 overflow-auto py-2 custom-scrollbar transition-colors ${dragOverPath === null && dragOverPath !== undefined ? "bg-primary-blue/5" : ""}`}
+        className={`flex-1 overflow-auto py-2 custom-scrollbar transition-colors ${dragOverPath === null && dragOverPath !== undefined ? "bg-primary/5" : ""}`}
         onDragOver={(e) => handleDragOver(e, null)}
         onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, null)}
       >
         {isLoading ? (
-          <div className="px-4 py-2 text-xs text-gray-500 animate-pulse font-mono">Scanning storage...</div>
+          <div className="px-5 py-3 text-xs text-text-muted animate-pulse font-mono tracking-tight">Syncing files...</div>
         ) : nodes.length === 0 ? (
-          <div className="px-4 py-8 text-center flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-dark-hover flex items-center justify-center text-gray-600 mb-2">
-              <Upload size={24} />
+          <div className="px-6 py-12 text-center flex flex-col items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-hover flex items-center justify-center text-text-muted">
+              <Upload size={18} />
             </div>
-            <p className="text-xs text-gray-500 italic">Project is empty</p>
-            <div className="flex flex-col gap-2">
+            <p className="text-xs text-text-muted">No files yet.</p>
+            <div className="flex flex-col gap-2 w-full">
               <button 
                 onClick={() => handleAction("create_file")}
-                className="text-[10px] bg-primary-blue/10 text-primary-blue px-3 py-1 rounded-full hover:bg-primary-blue/20 transition-colors"
+                className="text-[10px] w-full bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors font-semibold"
               >
-                + Create first file
+                + New File
               </button>
-              <span className="text-[9px] text-gray-600">or drop files here</span>
             </div>
           </div>
         ) : (

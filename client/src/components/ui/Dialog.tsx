@@ -60,16 +60,16 @@ export function Dialog({
       />
       
       {/* Dialog Panel */}
-      <div className="relative w-full max-w-md bg-dark-panel border border-dark-border rounded-lg shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-dark-border">
-          <h3 className="text-lg font-semibold text-gray-100">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X size={20} />
+      <div className="relative w-full max-w-sm bg-panel border border-border/30 rounded-xl animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-5 shrink-0">
+          <h3 className="text-sm font-bold text-text tracking-tight uppercase tracking-wider">{title}</h3>
+          <button onClick={onClose} className="text-text-muted hover:text-text transition-colors p-1 hover:bg-hover rounded-md">
+            <X size={14} />
           </button>
         </div>
         
-        <div className="px-6 py-4 space-y-4 flex-1">
-          {description && <p className="text-sm text-gray-400 leading-relaxed">{description}</p>}
+        <div className="px-5 py-4 space-y-4 flex-1">
+          {description && <p className="text-[12px] text-text-muted leading-relaxed font-medium">{description}</p>}
           
           {showInput && (
             <input
@@ -78,17 +78,17 @@ export function Dialog({
               value={inputValue}
               onChange={(e) => onInputChange?.(e.target.value)}
               placeholder={inputPlaceholder}
-              className="w-full bg-dark-bg border border-dark-border rounded px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-primary-blue transition-colors"
+              className="w-full bg-bg border border-border/30 rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-muted/40 focus:outline-none focus:border-primary transition-all font-medium"
             />
           )}
           
           {children}
         </div>
         
-        <div className="px-6 py-4 bg-dark-bg/50 border-t border-dark-border flex justify-end gap-3">
+        <div className="px-5 pb-5 flex justify-end gap-2.5">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+            className="px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-text-muted hover:text-text hover:bg-hover rounded-lg transition-colors"
           >
             {cancelText}
           </button>
@@ -96,10 +96,10 @@ export function Dialog({
           {onConfirm && (
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 text-sm font-bold rounded transition-all active:scale-95 ${
+              className={`px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all active:scale-95 ${
                 confirmVariant === "danger" 
-                  ? "bg-red-600 hover:bg-red-700 text-white" 
-                  : "bg-primary-blue hover:bg-blue-600 text-white"
+                   ? "bg-red-500 hover:bg-red-600 text-white" 
+                   : "bg-primary hover:bg-primary-hover text-white"
               }`}
             >
               {confirmText}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
-import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
 import { Loader2, Terminal as TerminalIcon, Command } from "lucide-react";
 import { useAppStore } from "@/store";
 import { FSService } from "@/services/fs.service";
@@ -10,7 +10,7 @@ import { ContextMenu, useContextMenu } from "../ui/ContextMenu";
 import { EditorTabs } from "./Tabs";
 
 export function CodeEditor({ projectId }: { projectId: string }) {
-  const { activeFilePath, openFiles, setIsSaving } = useAppStore();
+  const { activeFilePath, openFiles, setIsSaving, theme } = useAppStore();
   const [content, setContent] = useState("");
   const [lastSavedContent, setLastSavedContent] = useState("");
   const { contextMenu, closeContextMenu } = useContextMenu();
@@ -61,34 +61,34 @@ export function CodeEditor({ projectId }: { projectId: string }) {
 
   if (openFiles.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-gray-500 bg-dark-bg space-y-6">
-        <div className="p-8 rounded-full bg-dark-panel border border-dark-border shadow-2xl">
+      <div className="flex flex-col items-center justify-center h-full text-text-muted bg-bg space-y-8">
+        <div className="p-10 rounded-3xl bg-panel border border-border">
           <TerminalIcon
-            size={64}
-            className="opacity-20 text-primary-blue animate-pulse"
+            size={48}
+            className="opacity-40 text-primary"
           />
         </div>
-        <div className="text-center space-y-2">
-          <h3 className="text-lg font-bold text-gray-300">
+        <div className="text-center space-y-1.5 px-6">
+          <h3 className="text-lg font-bold text-text tracking-tight">
             Welcome to CodeBox
           </h3>
-          <p className="text-xs text-gray-500 max-w-[250px] leading-relaxed">
+          <p className="text-sm text-text-muted max-w-[280px] leading-relaxed">
             Select or drag files from the explorer to start building your
             project.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 w-48 pt-4">
-          <div className="flex items-center justify-between px-3 py-2 bg-dark-panel rounded border border-dark-border/50 text-[10px]">
-            <span className="text-gray-400">Run Python</span>
-            <span className="flex items-center gap-1 text-gray-500 font-mono">
-              <Command size={10} />R
+        <div className="flex flex-col gap-2.5 w-56 pt-2">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-panel rounded-xl border border-border text-[11px] font-medium">
+            <span className="text-text-muted">Run Python</span>
+            <span className="flex items-center gap-1.5 text-text-muted font-mono opacity-60">
+              <Command size={11} />R
             </span>
           </div>
-          <div className="flex items-center justify-between px-3 py-2 bg-dark-panel rounded border border-dark-border/50 text-[10px]">
-            <span className="text-gray-400">Search Files</span>
-            <span className="flex items-center gap-1 text-gray-500 font-mono">
-              <Command size={10} />P
+          <div className="flex items-center justify-between px-4 py-2.5 bg-panel rounded-xl border border-border text-[11px] font-medium">
+            <span className="text-text-muted">Search Files</span>
+            <span className="flex items-center gap-1.5 text-text-muted font-mono opacity-60">
+              <Command size={11} />P
             </span>
           </div>
         </div>
@@ -97,24 +97,24 @@ export function CodeEditor({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-dark-panel rounded-xl border border-dark-border shadow-2xl overflow-hidden transition-all">
+    <div className="flex-1 flex flex-col h-full bg-panel overflow-hidden transition-all">
       {/* Tab Management */}
       <EditorTabs />
 
       {/* Editor Body */}
-      <div className="flex-1 overflow-auto bg-dark-bg relative custom-scrollbar">
+      <div className="flex-1 overflow-auto bg-bg relative custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2
               size={24}
-              className="animate-spin text-primary-yellow opacity-50"
+              className="animate-spin text-primary opacity-40"
             />
           </div>
         ) : (
           <CodeMirror
             value={content}
             height="100%"
-            theme={vscodeDark}
+            theme={theme === 'light' ? vscodeLight : vscodeDark}
             extensions={[python()]}
             onChange={(value) => setContent(value)}
             className="text-[13px] font-mono leading-relaxed h-full"

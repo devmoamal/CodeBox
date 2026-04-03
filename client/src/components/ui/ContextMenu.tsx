@@ -56,7 +56,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-200 min-w-[180px] bg-dark-panel border border-dark-border rounded-lg shadow-2xl py-1.5 animate-in fade-in zoom-in-95 duration-100"
+      className="fixed z-200 min-w-[200px] bg-panel border border-border rounded-xl py-1.5 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-md"
       style={{ left: position.left, top: position.top }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -69,17 +69,18 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
             item.onClick();
             onClose();
           }}
-          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+          className={`w-full flex items-center gap-3 px-3.5 py-2 text-xs font-medium transition-colors ${
             item.variant === "danger"
-              ? "text-red-400 hover:bg-red-400/10"
-              : "text-gray-300 hover:bg-dark-active hover:text-white"
+              ? "text-red-500 hover:bg-red-500/10"
+              : "text-text-muted hover:bg-hover hover:text-text"
           } ${item.disabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
         >
-          {item.icon && <span className="shrink-0">{item.icon}</span>}
+          {item.icon && <span className="shrink-0 opacity-70 group-hover:opacity-100">{item.icon}</span>}
           <span className="flex-1 text-left">{item.label}</span>
         </button>
       ))}
-    </div>,
+    </div>
+,
     document.body
   );
 }

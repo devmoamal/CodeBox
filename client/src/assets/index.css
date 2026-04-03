@@ -1,21 +1,63 @@
 @import "tailwindcss";
 
 @theme {
-  /* Common Python Theme Colors */
-  --color-primary-blue: #306998;
-  --color-primary-yellow: #FFD43B;
-  --color-dark-bg: #1e1e1e;
-  --color-dark-panel: #252526;
-  --color-dark-border: #3c3c3c;
-  --color-dark-hover: #2a2d2e;
-  --color-dark-active: #37373d;
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
 }
 
 @layer base {
   :root {
-    background-color: var(--color-dark-bg);
-    color: #cccccc;
+    /* High Contrast Dynamic Theme */
+    --bg: #000000; /* Pure Black for the abyss gaps */
+    --panel: #0d0d0d; /* Clean, deep slate for cards */
+    --hover: #1e1e1e;
+    --active: #262626;
+    --border: #ffffff26; /* Crisp 15% White "Pro" border */
+    --border-hover: #ffffff40;
+    --text: #ffffff; /* White Text */
+    --text-muted: #9ca3af;
+    
+    /* Python Theme Colors */
+    --primary: #306998; /* Python Blue */
+    --primary-hover: #4B8BBE;
+    --accent: #FFD43B; /* Python Yellow */
+    --accent-hover: #FFE873;
+    
+    background-color: var(--bg);
+    color: var(--text);
     color-scheme: dark;
+  }
+
+  :root.light {
+    /* Light Theme - Keep it crisp white but keep the blue/yellow markers. */
+    --bg: #ffffff;
+    --panel: #f8fafc;
+    --hover: #f1f5f9;
+    --active: #e2e8f0;
+    --border: #306998; /* Still use the Blue borders in light */
+    --border-hover: #2B5B84;
+    --text: #000000;
+    --text-muted: #64748b;
+    
+    /* Python Theme Colors */
+    --primary: #306998;
+    --primary-hover: #2B5B84;
+    --accent: #eab308;
+    --accent-hover: #ca8a04;
+    
+    background-color: var(--bg);
+    color: var(--text);
+    color-scheme: light;
   }
 }
 
@@ -25,22 +67,23 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Custom Scrollbar */
+/* Minimal Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #424242;
-  border: 1px solid #1e1e1e;
+  background: var(--border);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4f4f4f;
+  background: var(--border-hover);
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
