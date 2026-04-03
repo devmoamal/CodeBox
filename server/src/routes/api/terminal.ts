@@ -51,7 +51,6 @@ router.get(
     return {
       onOpen(_event, ws) {
         logger.info(`Terminal session opened for project: ${projectId}`);
-        ws.send("\r\n\x1b[34m[CodeBox] PTY Session Started\x1b[0m\r\n");
 
         session.start(
           (data) => ws.send(data),

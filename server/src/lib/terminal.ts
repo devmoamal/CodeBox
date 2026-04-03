@@ -1,7 +1,8 @@
 import { logger } from "./logger";
-import { existsSync } from "fs";
-import { resolve, join } from "path";
+import { existsSync, readdirSync, readFileSync, statSync } from "fs";
+import { resolve, join, relative } from "path";
 import { Storage } from "./storage";
+import type { Subprocess } from "bun";
 
 export interface TerminalOptions {
   cwd: string;
@@ -12,353 +13,481 @@ export interface TerminalOptions {
   rows?: number;
 }
 
-const PROMPT_STYLE = "#codebox $ ";
-const HIDE_PROMPT = `PROMPT=""; PS1=""; stty -echo`;
-const SHOW_PROMPT = `\r\x1b[KPROMPT='${PROMPT_STYLE}'; PS1='${PROMPT_STYLE}'; stty echo`;
-
 export class TerminalSession {
-  private proc: any = null; // Bun.Subprocess
-  private isKilled = false;
-  private wrapperPath = resolve(join(import.meta.dir, "pty-wrapper.cjs"));
+  private cwd: string;
+  private commandBuffer: string = "";
+  private procCommandBuffer: string = "";
   private onDataCallback?: (data: string) => void;
   private onStatusCallback?: (status: "running" | "idle") => void;
+  private activeProc: Subprocess<"pipe", "pipe", "pipe"> | null = null;
+  private history: string[] = [];
+  private historyIndex: number = -1;
+  private savedCommand: string = "";
 
-  private isInitializing = true;
-  private isRunnerActive = false;
+  constructor(private shell: string, private options: TerminalOptions) {
+    this.cwd = options.cwd;
+  }
 
-  private isSuppressingNextEcho = false;
-  private suppressionBuffer = "";
-
-  constructor(
-    private shell: string,
-    private options: TerminalOptions,
-  ) {}
+  private get promptString() {
+    const projectRoot = resolve(this.options.cwd);
+    let rel = relative(projectRoot, this.cwd);
+    if (!rel || rel === "") {
+        return `\x1b[32m#codebox ~\x1b[0m $ `;
+    }
+    return `\x1b[32m#codebox ~/${rel}\x1b[0m $ `;
+  }
 
   public start(
     onData: (data: string) => void,
-    onExit: (exitCode: number, signal?: number) => void,
-    onStatus?: (status: "running" | "idle") => void,
+    _onExit: (exitCode: number, signal?: number) => void,
+    onStatus?: (status: "running" | "idle") => void
   ) {
     this.onDataCallback = onData;
     this.onStatusCallback = onStatus;
 
-    if (!existsSync(this.options.cwd)) {
-      logger.warn(
-        `Terminal CWD does not exist, falling back to process.cwd(): ${this.options.cwd}`,
-      );
-      this.options.cwd = process.cwd();
+    this.writePrompt();
+    return { pid: process.pid }; // Placeholder for compatibility
+  }
+
+  private writePrompt(newline = false) {
+    const p = newline ? "\r\n" + this.promptString : this.promptString;
+    this.send(p);
+  }
+
+  private send(data: string) {
+    this.onDataCallback?.(data);
+  }
+
+  private resolveSecurePath(target: string): string | null {
+    const projectRoot = resolve(this.options.cwd);
+    const resolved = resolve(this.cwd, target);
+    if (!resolved.startsWith(projectRoot)) {
+        return null;
     }
-
-    const absoluteCwd = resolve(this.options.cwd);
-
-    try {
-      logger.info(`Spawning Node.js PTY offloader at: ${this.wrapperPath}`);
-
-      this.proc = Bun.spawn(
-        [
-          "node",
-          this.wrapperPath,
-          this.shell || (process.platform === "darwin" ? "zsh" : "bash"),
-          absoluteCwd,
-          (this.options.cols || 80).toString(),
-          (this.options.rows || 24).toString(),
-        ],
-        {
-          stdin: "pipe",
-          stdout: "pipe",
-          stderr: "pipe",
-          env: (this.options.env || process.env) as any,
-        },
-      );
-
-      (async () => {
-        const reader = this.proc.stdout.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value);
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              if (!line.trim()) continue;
-              try {
-                const msg = JSON.parse(line);
-                if (msg.type === "data") {
-                  if (this.isInitializing) {
-                    if (msg.data.includes("@@CB_READY@@")) {
-                      this.isInitializing = false;
-                      const cleanData = msg.data.split("@@CB_READY@@")[1] || "";
-                      if (!cleanData.trim()) continue;
-                      onData(cleanData);
-                    }
-                    continue;
-                  }
-
-                  let currentData = msg.data;
-
-                  // STATUS INTERCEPTION (From shell runner execution)
-                  if (currentData.includes("@@CB_STATUS@@:running")) {
-                    currentData = currentData.replace(/@@CB_STATUS@@:running\r?\n?/g, "");
-                    this.isRunnerActive = true;
-                    this.onStatusCallback?.("running");
-                  }
-                  
-                  if (currentData.includes("@@CB_STATUS@@:idle")) {
-                    currentData = currentData.replace(/@@CB_STATUS@@:idle\r?\n?/g, "");
-                    this.isRunnerActive = false;
-                    this.onStatusCallback?.("idle");
-                  }
-
-                  // COMMAND EXEC INTERCEPTION (For move, rename, delete, help)
-                  if (currentData.includes("@@CB_EXEC@@:")) {
-                    const match = currentData.match(/@@CB_EXEC@@:(\w+)(?:\s+(.*))?/);
-                    if (match) {
-                      const [, cmd, args] = match;
-                      this.handleMarkerCommand(cmd, (args || "").trim());
-                      currentData = currentData.replace(/@@CB_EXEC@@:.*?\r?\n?/g, "");
-                    }
-                  }
-
-                  // ECHO SUPPRESSION (For backend-driven UI commands)
-                  if (this.isSuppressingNextEcho) {
-                    this.suppressionBuffer += currentData;
-                    if (this.suppressionBuffer.includes(SHOW_PROMPT)) {
-                      const parts = this.suppressionBuffer.split(SHOW_PROMPT);
-                      const after = parts[parts.length - 1];
-                      currentData = after.startsWith("\n") ? after.substring(1) : after;
-                      this.isSuppressingNextEcho = false;
-                      this.suppressionBuffer = "";
-                    } else {
-                      continue; // Still buffering the command
-                    }
-                  }
-
-                   // Drop if it was entirely a suppressed marker
-                  if (!currentData.trim() && msg.data.trim()) {
-                    continue;
-                  }
-
-                  if (currentData) {
-                    onData(currentData);
-                  }
-                } else if (msg.type === "exit") {
-                  this.cleanup();
-                  onExit(msg.exitCode, msg.signal);
-                }
-              } catch (e) {
-                // Ignore parsing errors
-              }
-            }
-          }
-        } catch (error) {
-          if (!this.isKilled) {
-            logger.error("Error reading PTY wrapper output", error);
-          }
-        }
-      })();
-
-      (async () => {
-        const reader = this.proc.stderr.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          logger.warn(`PTY Wrapper stderr: ${decoder.decode(value)}`);
-        }
-      })();
-
-      logger.info(
-        `Terminal process started via Node.js offloader (Bun PID: ${this.proc.pid})`,
-      );
-
-      // Phased silent initialization to prevent output leaks
-      setTimeout(() => {
-        const functions = [
-          `export PROMPT='${PROMPT_STYLE}'`,
-          `export PS1='${PROMPT_STYLE}'`,
-          `run() {`,
-          `  printf "\\n@@CB_STATUS@@:running\\n"`,
-          `  PROMPT=""; PS1=""; stty echo`,
-          `  python3 -u "$@"`,
-          `  local exit_code=$?`,
-          `  stty -echo`,
-          `  if [ $exit_code -eq 130 ]; then`,
-          `    printf "\\r\\n\\033[2K\\033[31m[CodeBox] Execution stopped\\033[0m\\r\\n"`,
-          `  elif [ $exit_code -ne 0 ]; then`,
-          `    printf "\\r\\n\\033[31m[CodeBox] Execution failed (exit code %d)\\033[0m\\r\\n" "$exit_code"`,
-          `  else`,
-          `    printf "\\r\\n\\033[2m[CodeBox] Execution finished successfully\\033[0m\\r\\n"`,
-          `  fi`,
-          `  printf "@@CB_STATUS@@:idle\\n"`,
-          `  PROMPT='${PROMPT_STYLE}'; PS1='${PROMPT_STYLE}'; stty echo; echo ""`,
-          `}`,
-          `stop() { echo "No script is currently running."; }`,
-          `move() { ${HIDE_PROMPT}; printf "\\n@@CB_EXEC@@:move %s\\n" "$*"; }`,
-          `rename() { ${HIDE_PROMPT}; printf "\\n@@CB_EXEC@@:rename %s\\n" "$*"; }`,
-          `delete() { ${HIDE_PROMPT}; printf "\\n@@CB_EXEC@@:delete %s\\n" "$*"; }`,
-          `help() { ${HIDE_PROMPT}; printf "\\n@@CB_EXEC@@:help\\n"; }`,
-        ].join("\n") + "\n";
-        
-        this.rawWrite(functions);
-
-        setTimeout(() => {
-          this.rawWrite(`echo "@@CB_READY@@"\n`);
-        }, 300);
-      }, 500);
-    } catch (error: any) {
-      logger.error("Failed to start terminal offloader", error);
-      throw error;
-    }
-
-    return this.proc;
+    return resolved;
   }
 
   public async write(data: string) {
-    if (!this.proc || this.isKilled) return;
-
-    // INTERCEPTION: Cleanly route Stop UI command to interactive scripts
-    if (this.isRunnerActive && (data.trim() === "stop" || data === "\x03")) {
-      this.rawWrite("\x03"); // Send SIGINT to the PTY
-      return;
+    if (this.activeProc) {
+        this.handleProcessInput(data);
+        return;
     }
 
-    this.rawWrite(data);
+    // Handle History navigation
+    if (data === "\x1b[A") { // UP
+        this.navigateHistory(-1);
+        return;
+    }
+    if (data === "\x1b[B") { // DOWN
+        this.navigateHistory(1);
+        return;
+    }
+
+    // Skip other ANSI escape sequences from the frontend (like left/right arrow keys)
+    if (data.startsWith("\x1b")) {
+        return;
+    }
+
+    await this.handleLocalShellInput(data);
   }
 
-  private rawWrite(data: string) {
+  private navigateHistory(direction: number) {
+    if (this.history.length === 0) return;
+
+    if (this.historyIndex === -1) {
+        if (direction === 1) return; // already at newest
+        this.savedCommand = this.commandBuffer; // save in-progress typing
+        this.historyIndex = this.history.length - 1;
+    } else {
+        this.historyIndex += direction;
+    }
+
+    if (this.historyIndex >= this.history.length) {
+        this.historyIndex = -1;
+        this.commandBuffer = this.savedCommand;
+    } else if (this.historyIndex < 0) {
+        this.historyIndex = 0;
+        this.commandBuffer = this.history[0];
+    } else {
+        this.commandBuffer = this.history[this.historyIndex];
+    }
+
+    // \x1b[2K clears the entire line. \r returns carriage to start.
+    this.send("\x1b[2K\r" + this.promptString + this.commandBuffer);
+  }
+
+  private handleProcessInput(data: string) {
+    if (!this.activeProc) return;
+
+    if (data === "\x03") { // Ctrl-C
+        this.activeProc.kill();
+        this.procCommandBuffer = "";
+        return;
+    }
+    
+    for (let i = 0; i < data.length; i++) {
+        const char = data[i];
+        if (char === "\r") {
+            this.send("\r\n");
+            try {
+                this.activeProc.stdin.write(this.procCommandBuffer + "\n");
+                this.activeProc.stdin.flush();
+            } catch (e) { /* ignore */ }
+            this.procCommandBuffer = "";
+        } else if (char === "\x7f") { // Backspace
+            if (this.procCommandBuffer.length > 0) {
+                this.procCommandBuffer = this.procCommandBuffer.slice(0, -1);
+                this.send("\b \b");
+            }
+        } else if (char.length === 1 && char.charCodeAt(0) >= 32) {
+            this.procCommandBuffer += char;
+            this.send(char);
+        }
+    }
+  }
+
+  private handleTabCompletion() {
+    if (this.commandBuffer.length === 0) return;
+    
+    // Extract the last typed distinct word.
+    const lastSpace = this.commandBuffer.lastIndexOf(" ");
+    const fragment = lastSpace === -1 ? this.commandBuffer : this.commandBuffer.slice(lastSpace + 1);
+    
+    if (fragment.length === 0) return; // Don't autocomplete nothing
+
     try {
-      const msg = JSON.stringify({ type: "write", data }) + "\n";
-      this.proc.stdin.write(msg);
-      this.proc.stdin.flush();
-    } catch (error) {
-      logger.error("Failed to write to PTY offloader", error);
+        const files = readdirSync(this.cwd);
+        const matches = files.filter(f => f.startsWith(fragment));
+
+        if (matches.length === 1) {
+            const completion = matches[0].slice(fragment.length);
+            this.commandBuffer += completion;
+            this.send(completion);
+        } else if (matches.length > 1) {
+            let i = fragment.length;
+            let commonPrefix = "";
+            while (true) {
+                if (i >= matches[0].length) break;
+                const c = matches[0][i];
+                if (matches.every(m => m[i] === c)) {
+                    commonPrefix += c;
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            
+            if (commonPrefix.length > 0) {
+                this.commandBuffer += commonPrefix;
+                this.send(commonPrefix);
+            } else {
+                this.send("\r\n");
+                const formatted = matches.map(f => {
+                    const stats = statSync(join(this.cwd, f));
+                    return stats.isDirectory() ? `\x1b[1;33m${f}/\x1b[0m` : `\x1b[34m${f}\x1b[0m`;
+                }).join("  ");
+                
+                this.send(formatted + "\r\n");
+                this.send(this.promptString + this.commandBuffer);
+            }
+        }
+    } catch(e) {
+        // ignore errors
     }
   }
 
-  private handleMarkerCommand(cmd: string, args: string) {
-    switch (cmd.toLowerCase()) {
-      case "move": {
-        const parts = args.split(/\s+/);
-        if (parts.length >= 2) this.executeMove(parts[0], parts[1]);
+  private async handleLocalShellInput(data: string) {
+    for (let i = 0; i < data.length; i++) {
+        const char = data[i];
+
+        if (char === "\r") { // Enter
+            this.send("\r\n");
+            const cmdLine = this.commandBuffer.trim();
+            
+            if (cmdLine && (this.history.length === 0 || this.history[this.history.length - 1] !== cmdLine)) {
+                this.history.push(cmdLine);
+            }
+            this.historyIndex = -1;
+            this.commandBuffer = "";
+            
+            if (cmdLine) {
+                await this.executeCommand(cmdLine);
+            } else {
+                this.writePrompt();
+            }
+        } else if (char === "\x7f") { // Backspace
+            if (this.commandBuffer.length > 0) {
+                this.commandBuffer = this.commandBuffer.slice(0, -1);
+                this.send("\b \b");
+            }
+        } else if (char === "\x03") { // Ctrl-C
+            this.commandBuffer = "";
+            this.send("^C\r\n");
+            this.writePrompt();
+        } else if (char === "\t") { // Tab
+            this.handleTabCompletion();
+        } else if (char.length === 1 && char.charCodeAt(0) >= 32) { // Printables
+            this.commandBuffer += char;
+            this.send(char);
+        }
+    }
+  }
+
+  private async executeCommand(line: string) {
+    const parts = line.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    this.onStatusCallback?.("running");
+
+    switch (cmd) {
+      case "ls":
+        this.handleLs(args);
         break;
-      }
-      case "rename": {
-        const parts = args.split(/\s+/);
-        if (parts.length >= 2) this.executeMove(parts[0], parts[1], "Rename");
+      case "cd":
+        this.handleCd(args);
         break;
-      }
-      case "delete":
-        if (args) this.executeDelete(args);
+      case "cat":
+        this.handleCat(args);
+        break;
+      case "clear":
+        this.send("\x1b[2J\x1b[H"); // ANSI Clear + Home
         break;
       case "help":
         this.showHelp();
         break;
+      case "run":
+        if (args.length > 0) {
+            await this.handleRun(args[0], args.slice(1));
+            return;
+        } else {
+            this.send("\x1b[31mUsage: run <file.py>\x1b[0m\r\n");
+        }
+        break;
+      case "move":
+      case "rename":
+        if (args.length >= 2) {
+            await this.executeFileSystemOp("move", args[0], args[1]);
+        } else {
+            this.send("\x1b[31mUsage: move <src> <dest>\x1b[0m\r\n");
+        }
+        break;
+      case "delete":
+      case "rm":
+        if (args.length > 0) {
+            await this.executeFileSystemOp("delete", args[0]);
+        } else {
+            this.send("\x1b[31mUsage: delete <path>\x1b[0m\r\n");
+        }
+        break;
+      default:
+        await this.handleExternalCommand(cmd, args);
+        return;
     }
-  }
 
-  private sendToTerminal(data: string) {
-    if (this.onDataCallback) {
-      this.onDataCallback(data.replace(/\n/g, "\r\n"));
-    }
-  }
-
-  private finalizeCommand() {
-    this.isSuppressingNextEcho = true;
-    this.suppressionBuffer = "";
-    this.rawWrite(`\n${SHOW_PROMPT}\n`);
     this.onStatusCallback?.("idle");
+    this.writePrompt();
   }
 
-  private async executeMove(oldPath: string, newPath: string, action = "Move") {
+  private async handleExternalCommand(cmd: string, args: string[]) {
+    this.onStatusCallback?.("running");
     try {
-      const src = this.options.projectId
-        ? join(this.options.projectId, oldPath)
-        : oldPath;
-      const dest = this.options.projectId
-        ? join(this.options.projectId, newPath)
-        : newPath;
+      let spawnCmd = [cmd, ...args];
+      
+      if (process.platform === "darwin") {
+        const pyArgs = JSON.stringify([cmd, ...args]);
+        const pyScript = `import pty, sys\ntry:\n    pty.spawn(${pyArgs})\nexcept FileNotFoundError:\n    sys.stdout.write("\\x1b[31mCommand not found: " + ${JSON.stringify(cmd)} + "\\x1b[0m\\r\\n")\n    sys.stdout.flush()\n    sys.exit(127)`;
+        spawnCmd = ["python3", "-c", pyScript];
+      }
 
-      await Storage.changeFileDir(src, dest);
-      this.sendToTerminal(
-        `\r\n\x1b[2m[CodeBox] ${action} successful: ${oldPath} -> ${newPath}\x1b[0m\r\n`,
-      );
-      this.finalizeCommand();
-    } catch (e: any) {
-      this.sendToTerminal(
-        `\r\n\x1b[31m[CodeBox] ${action} failed: ${e.message}\x1b[0m\r\n`,
-      );
-      this.finalizeCommand();
+      this.activeProc = Bun.spawn(spawnCmd, {
+        cwd: this.cwd,
+        stdin: "pipe",
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+
+      const stdoutReader = this.activeProc.stdout.getReader();
+      const stderrReader = this.activeProc.stderr.getReader();
+      const decoder = new TextDecoder();
+
+      const readStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, color = "") => {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+                const text = decoder.decode(value).replace(/\n/g, "\r\n");
+                this.send(color + text + (color ? "\x1b[0m" : ""));
+            }
+          }
+        } catch (e) {
+        }
+      };
+
+      await Promise.all([
+        readStream(stdoutReader),
+        readStream(stderrReader, "\x1b[31m")
+      ]);
+
+      const result = await this.activeProc.exited;
+      if (result !== 0 && result !== null) {
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.indexOf("not found") !== -1 || (e as any).code === "ENOENT") {
+        this.send(`\x1b[31mCommand not found: ${cmd}\x1b[0m\r\n`);
+      } else {
+        this.send(`\x1b[31m[CodeBox] Failed to execute: ${msg}\x1b[0m\r\n`);
+      }
+    } finally {
+      this.activeProc = null;
+      this.onStatusCallback?.("idle");
+      this.writePrompt();
     }
   }
 
-  private async executeDelete(path: string) {
+  private handleLs(_args: string[]) {
     try {
-      const fullPath = this.options.projectId
-        ? join(this.options.projectId, path)
-        : path;
-      await Storage.delete(fullPath);
-      this.sendToTerminal(`\r\n\x1b[2m[CodeBox] Deleted ${path}\x1b[0m\r\n`);
-      this.finalizeCommand();
-    } catch (e: any) {
-      this.sendToTerminal(
-        `\r\n\x1b[31m[CodeBox] Delete failed: ${e.message}\x1b[0m\r\n`,
-      );
-      this.finalizeCommand();
+      const files = readdirSync(this.cwd);
+      if (files.length === 0) return;
+      
+      const formatted = files.map(f => {
+        const stats = statSync(join(this.cwd, f));
+        if (stats.isDirectory()) {
+            return `\x1b[1;33m${f}/\x1b[0m`;
+        }
+        return `\x1b[34m${f}\x1b[0m`;
+      }).join("  ");
+      
+      this.send(formatted + "\r\n");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.send(`\x1b[31mls failed: ${msg}\x1b[0m\r\n`);
+    }
+  }
+
+  private handleCd(args: string[]) {
+    const target = args[0] || ".";
+    const newPath = this.resolveSecurePath(target);
+    
+    if (!newPath) {
+        this.send("\x1b[31mAccess denied\x1b[0m\r\n");
+        return;
+    }
+
+    if (existsSync(newPath) && statSync(newPath).isDirectory()) {
+      this.cwd = newPath;
+    } else {
+      this.send(`\x1b[31mcd: no such directory: ${target}\x1b[0m\r\n`);
+    }
+  }
+
+  private handleCat(args: string[]) {
+    if (args.length === 0) {
+        this.send("\x1b[31mUsage: cat <file>\x1b[0m\r\n");
+        return;
+    }
+    try {
+      const fullPath = this.resolveSecurePath(args[0]);
+      if (!fullPath) {
+          this.send("\x1b[31mAccess denied\x1b[0m\r\n");
+          return;
+      }
+
+      if (existsSync(fullPath) && statSync(fullPath).isFile()) {
+        const content = readFileSync(fullPath, "utf8");
+        this.send(content.replace(/\n/g, "\r\n") + "\r\n");
+      } else {
+        this.send(`\x1b[31mcat: ${args[0]}: No such file\x1b[0m\r\n`);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.send(`\x1b[31mcat failed: ${msg}\x1b[0m\r\n`);
+    }
+  }
+
+  private async handleRun(file: string, args: string[]) {
+    const fullPath = this.resolveSecurePath(file);
+    if (!fullPath) {
+        this.send("\x1b[31mAccess denied\x1b[0m\r\n");
+        this.onStatusCallback?.("idle");
+        this.writePrompt();
+        return;
+    }
+
+    if (!existsSync(fullPath)) {
+        this.send(`\x1b[31mFile not found: ${file}\x1b[0m\r\n`);
+        this.onStatusCallback?.("idle");
+        this.writePrompt();
+        return;
+    }
+
+    this.send(`\x1b[2m[CodeBox] Running python3 ${file}...\x1b[0m\r\n`);
+    await this.handleExternalCommand("python3", ["-u", fullPath, ...args]);
+  }
+
+  private async executeFileSystemOp(type: "move" | "delete", src: string, dest?: string) {
+    try {
+      const projectRoot = resolve(this.options.cwd);
+      const absSrc = this.resolveSecurePath(src);
+      
+      if (!absSrc) {
+          this.send("\x1b[31mAccess denied for source path\x1b[0m\r\n");
+          return;
+      }
+
+      const relSrc = relative(projectRoot, absSrc);
+
+      if (type === "move" && dest) {
+        const absDest = this.resolveSecurePath(dest);
+        if (!absDest) {
+            this.send("\x1b[31mAccess denied for destination path\x1b[0m\r\n");
+            return;
+        }
+
+        const relDest = relative(projectRoot, absDest);
+        await Storage.changeFileDir(join(this.options.projectId || "", relSrc), join(this.options.projectId || "", relDest));
+        this.send(`\x1b[2m[CodeBox] Success: ${src} -> ${dest}\x1b[0m\r\n`);
+      } else if (type === "delete") {
+        await Storage.delete(join(this.options.projectId || "", relSrc));
+        this.send(`\x1b[2m[CodeBox] Deleted ${src}\x1b[0m\r\n`);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      this.send(`\x1b[31m[CodeBox] Operation failed: ${msg}\x1b[0m\r\n`);
     }
   }
 
   private showHelp() {
-    const help = `\r\n\x1b[1m\x1b[36mCodeBox Custom Commands:\x1b[0m
-  \x1b[33mrun <file.py>\x1b[0m           Execute a Python script
-  \x1b[33mmove <old> <new>\x1b[0m        Move or rename a file/folder
-  \x1b[33mrename <old> <new>\x1b[0m      Rename a file/folder
-  \x1b[33mdelete <path>\x1b[0m           Delete a file or folder
-  \x1b[33mhelp\x1b[0m                    Show this help menu\r\n`;
-    
-    this.sendToTerminal(help);
-    this.sendToTerminal(`\x1b[2m[CodeBox] Help menu displayed\x1b[0m\r\n`);
-    this.finalizeCommand();
+    const lines = [
+        "",
+        "\x1b[1m\x1b[36mCodeBox Custom Shell Commands:\x1b[0m",
+        "  \x1b[33mls\x1b[0m                List files in directory",
+        "  \x1b[33mcd <dir>\x1b[0m          Change directory",
+        "  \x1b[33mcat <file>\x1b[0m        Read file content",
+        "  \x1b[33mrun <file.py>\x1b[0m     Execute a Python script",
+        "  \x1b[33mmove <src> <dest>\x1b[0m Close or rename a file/folder",
+        "  \x1b[33mdelete <path>\x1b[0m     Delete a file or folder",
+        "  \x1b[33mclear\x1b[0m             Clear screen",
+        "  \x1b[33mhelp\x1b[0m              Show this help menu",
+        ""
+    ];
+
+    this.send(lines.join("\r\n"));
   }
 
-  public resize(cols: number, rows: number) {
-    if (!this.proc || this.isKilled) return;
-
-    try {
-      const msg = JSON.stringify({ type: "resize", cols, rows }) + "\n";
-      this.proc.stdin.write(msg);
-      this.proc.stdin.flush();
-    } catch (error) {
-      logger.error("Failed to resize PTY offloader", error);
-    }
-  }
-
-  private cleanup() {
-    this.isKilled = true;
-    this.proc = null;
+  public resize(_cols: number, _rows: number) {
   }
 
   public kill() {
-    if (this.isKilled) return;
-    this.cleanup();
-    if (this.proc) {
-      try {
-        const msg = JSON.stringify({ type: "kill" }) + "\n";
-        this.proc.stdin.write(msg);
-        this.proc.stdin.flush();
-        this.proc.kill();
-      } catch (error) {
-        // Ignore kill errors
-      }
+    if (this.activeProc) {
+      this.activeProc.kill();
+      this.activeProc = null;
     }
   }
 
   public get isActive() {
-    return this.proc !== null && !this.isKilled;
+    return true;
   }
 }
