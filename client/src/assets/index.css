@@ -67,24 +67,42 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Minimal Custom Scrollbar */
+/* Custom Selection Color (Python Theme) */
+::selection {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+/* Ultra-Minimal "Disappearing" Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 2px;
+  height: 2px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: transparent;
   border-radius: 10px;
+  transition: background 0.3s ease;
 }
+
+/* Only show scrollbar thumb when hovering over the container that is scrolling */
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: var(--border-hover) !important;
 }
+
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+

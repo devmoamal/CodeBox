@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
+export type SidebarTab = 'files' | 'search' | 'git' | 'settings';
+
 interface AppState {
   activeFilePath: string | null;
   openFiles: string[];
@@ -9,6 +11,9 @@ interface AppState {
   isSaving: boolean;
   isRunning: boolean;
   theme: 'light' | 'dark';
+  panelLayouts: Record<string, Record<string, number>>; // layout-id -> { panel-id: size }
+  isSidebarVisible: boolean;
+  activeSidebarTab: SidebarTab;
 
   setActiveFile: (path: string | null) => void;
   openFile: (path: string) => void;
@@ -18,6 +23,9 @@ interface AppState {
   setIsSaving: (isSaving: boolean) => void;
   setIsRunning: (isRunning: boolean) => void;
   toggleTheme: () => void;
+  setPanelLayout: (id: string, layout: Record<string, number>) => void;
+  toggleSidebar: () => void;
+  setActiveSidebarTab: (tab: SidebarTab) => void;
 }
 
 const getInitialTheme = (): 'light' | 'dark' => {
@@ -26,6 +34,36 @@ const getInitialTheme = (): 'light' | 'dark' => {
     if (saved) return saved;
   }
   return 'dark';
+};
+
+const getInitialLayouts = (): Record<string, Record<string, number>> => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('panelLayouts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return {};
+      }
+    }
+  }
+  return {};
+};
+
+const getInitialSidebarVisible = (): boolean => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('isSidebarVisible');
+    return saved !== null ? saved === 'true' : true;
+  }
+  return true;
+};
+
+const getInitialSidebarTab = (): SidebarTab => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('activeSidebarTab') as SidebarTab;
+    if (saved) return saved;
+  }
+  return 'files';
 };
 
 export const useAppStore = create<AppState>()(
@@ -37,6 +75,9 @@ export const useAppStore = create<AppState>()(
     isSaving: false,
     isRunning: false,
     theme: getInitialTheme(),
+    panelLayouts: getInitialLayouts(),
+    isSidebarVisible: getInitialSidebarVisible(),
+    activeSidebarTab: getInitialSidebarTab(),
 
     setActiveFile: (path) => set({ activeFilePath: path }),
     openFile: (path) =>
@@ -66,6 +107,21 @@ export const useAppStore = create<AppState>()(
       const next = state.theme === 'light' ? 'dark' : 'light';
       localStorage.setItem('theme', next);
       return { theme: next };
+    }),
+    setPanelLayout: (id, layout) =>
+      set((state) => {
+        const newLayouts = { ...state.panelLayouts, [id]: layout };
+        localStorage.setItem('panelLayouts', JSON.stringify(newLayouts));
+        return { panelLayouts: newLayouts };
+      }),
+    toggleSidebar: () => set((state) => {
+      const next = !state.isSidebarVisible;
+      localStorage.setItem('isSidebarVisible', String(next));
+      return { isSidebarVisible: next };
+    }),
+    setActiveSidebarTab: (tab) => set(() => {
+      localStorage.setItem('activeSidebarTab', tab);
+      return { activeSidebarTab: tab, isSidebarVisible: true };
     }),
   }))
 );

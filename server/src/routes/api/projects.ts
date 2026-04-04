@@ -12,6 +12,7 @@ import {
 import { Hono } from "hono";
 import { ProjectsService } from "@/services/projects.service";
 import { StorageService } from "@/services/storage.service";
+import { SearchService } from "@/services/search.service";
 import { NotFoundError } from "@/lib/error";
 import Response from "@/lib/response";
 
@@ -46,6 +47,21 @@ router.get("/:project_id/files", validateParams(projectIdParamSchema), async (c)
 
   const files = await StorageService.listAllByProjectId(project_id);
   return Response.success(c, files);
+});
+
+/**
+ * Search strings in project files
+ */
+router.get("/:project_id/search", validateParams(projectIdParamSchema), async (c) => {
+  const { project_id } = c.req.valid("param");
+  const q = c.req.query("q") || "";
+  const matchCase = c.req.query("matchCase") === "true";
+  const wholeWord = c.req.query("wholeWord") === "true";
+
+  if (!q || q.length < 2) return Response.success(c, []);
+
+  const results = await SearchService.search(project_id, q, { matchCase, wholeWord });
+  return Response.success(c, results);
 });
 
 /**
