@@ -9,12 +9,12 @@ COPY shared/package.json ./shared/package.json
 COPY server/package.json ./server/package.json
 COPY client/package.json ./client/package.json
 
+# Install dependencies for the whole workspace
+RUN bun install
+
 # Now pull in the full source for needed workspaces
 COPY shared ./shared
 COPY server ./server
-
-# Install dependencies for the whole workspace
-RUN bun install
 
 # Expose server port
 EXPOSE 3000

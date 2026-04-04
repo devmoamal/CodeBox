@@ -10,12 +10,12 @@ COPY shared/package.json ./shared/package.json
 COPY server/package.json ./server/package.json
 COPY client/package.json ./client/package.json
 
+# Install dependencies for the whole workspace
+RUN bun install
+
 # Now pull in the full source for needed workspaces
 COPY shared ./shared
 COPY client ./client
-
-# Install dependencies for the whole workspace
-RUN bun install
 
 # Build the client
 WORKDIR /app/client
@@ -35,12 +35,12 @@ COPY --from=builder /app/shared/package.json ./shared/package.json
 COPY --from=builder /app/server/package.json ./server/package.json
 COPY --from=builder /app/client/package.json ./client/package.json
 
+# Install production dependencies
+RUN bun install
+
 # Copy source only for relevant workspaces
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/client ./client
-
-# Install production dependencies
-RUN bun install
 
 # Expose Vite preview port
 EXPOSE 80
