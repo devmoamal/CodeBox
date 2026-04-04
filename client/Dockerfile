@@ -4,6 +4,13 @@ WORKDIR /app
 
 # Copy root workspace files
 COPY package.json bun.lock ./
+
+# Copy all workspace package files to satisfy workspace-aware install
+COPY shared/package.json ./shared/package.json
+COPY server/package.json ./server/package.json
+COPY client/package.json ./client/package.json
+
+# Now pull in the full source for needed workspaces
 COPY shared ./shared
 COPY client ./client
 
@@ -20,6 +27,13 @@ WORKDIR /app
 
 # Copy built workspace files from builder
 COPY --from=builder /app/package.json /app/bun.lock ./
+
+# Again, satisfy workspace graph for production install
+COPY --from=builder /app/shared/package.json ./shared/package.json
+COPY --from=builder /app/server/package.json ./server/package.json
+COPY --from=builder /app/client/package.json ./client/package.json
+
+# Copy source only for relevant workspaces
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/client ./client
 
