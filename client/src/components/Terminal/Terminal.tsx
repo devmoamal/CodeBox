@@ -54,7 +54,8 @@ export function Terminal({ projectId }: TerminalProps) {
     let resizeObserver: ResizeObserver | null = null;
 
     const initTerminal = () => {
-      if (!isMounted.current || !terminalRef.current || xtermRef.current) return;
+      if (!isMounted.current || !terminalRef.current || xtermRef.current)
+        return;
       if (terminalRef.current.offsetWidth === 0) return;
 
       term = new XTerm({
@@ -76,7 +77,10 @@ export function Terminal({ projectId }: TerminalProps) {
 
       // WebSocket Setup
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host = window.location.hostname === "localhost" ? "localhost:3000" : window.location.host;
+      const host =
+        window.location.hostname === "localhost"
+          ? "localhost:3000"
+          : window.location.host;
       socket = new WebSocket(`${protocol}//${host}/api/terminal/${projectId}`);
       socketRef.current = socket;
 
@@ -86,9 +90,17 @@ export function Terminal({ projectId }: TerminalProps) {
           fitAddon.fit();
           const dims = fitAddon.proposeDimensions();
           if (dims && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+            socket.send(
+              JSON.stringify({
+                type: "resize",
+                cols: dims.cols,
+                rows: dims.rows,
+              }),
+            );
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       };
 
       socket.onmessage = (event) => {
@@ -117,7 +129,7 @@ export function Terminal({ projectId }: TerminalProps) {
 
     resizeObserver = new ResizeObserver(() => {
       if (!isMounted.current || !terminalRef.current) return;
-      
+
       if (!xtermRef.current) {
         initTerminal();
       } else if (fitAddon && socket?.readyState === WebSocket.OPEN) {
@@ -125,9 +137,17 @@ export function Terminal({ projectId }: TerminalProps) {
           fitAddon.fit();
           const dims = fitAddon.proposeDimensions();
           if (dims) {
-            socket.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+            socket.send(
+              JSON.stringify({
+                type: "resize",
+                cols: dims.cols,
+                rows: dims.rows,
+              }),
+            );
           }
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       }
     });
 
@@ -138,7 +158,11 @@ export function Terminal({ projectId }: TerminalProps) {
     const unsubscribe = useAppStore.subscribe(
       (state) => state.terminalCommand,
       (command: string | null) => {
-        if (isMounted.current && command && socket?.readyState === WebSocket.OPEN) {
+        if (
+          isMounted.current &&
+          command &&
+          socket?.readyState === WebSocket.OPEN
+        ) {
           socket.send(command + "\r");
           setTimeout(() => useAppStore.getState().sendTerminalCommand(""), 0);
         }
@@ -149,7 +173,11 @@ export function Terminal({ projectId }: TerminalProps) {
       isMounted.current = false;
       resizeObserver?.disconnect();
       unsubscribe();
-      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+      if (
+        socket &&
+        (socket.readyState === WebSocket.OPEN ||
+          socket.readyState === WebSocket.CONNECTING)
+      ) {
         socket.close();
       }
       if (term) {
@@ -166,7 +194,9 @@ export function Terminal({ projectId }: TerminalProps) {
     if (xtermRef.current) {
       try {
         xtermRef.current.options.theme = getTheme(appTheme);
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        /* ignore */
+      }
     }
   }, [appTheme]);
 
@@ -174,14 +204,16 @@ export function Terminal({ projectId }: TerminalProps) {
     <div className="flex flex-col h-full w-full bg-transparent overflow-hidden">
       <div className="h-10 flex items-center px-4 shrink-0 bg-panel/30">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
           <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
             Terminal
           </span>
         </div>
       </div>
       <div className="flex-1 min-h-0 relative bg-bg">
-        <div ref={terminalRef} className="absolute inset-0 p-3" />
+        <div
+          ref={terminalRef}
+          className="absolute left-0 right-0 top-0 bottom-8 px-4 pt-2"
+        />
       </div>
     </div>
   );

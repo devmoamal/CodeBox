@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Link, useParams } from "@tanstack/react-router";
 import { Panel, Group, Separator } from "react-resizable-panels";
 import { FileExplorer } from "@/components/FileExplorer";
 import { CodeEditor } from "@/components/CodeEditor/CodeEditor";
 import { Terminal } from "@/components/Terminal/Terminal";
 import { useAppStore } from "@/store";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Terminal as TerminalIcon } from "lucide-react";
 import { useProject } from "@/hooks/useProject";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -12,6 +13,7 @@ export function ProjectPage() {
   const { projectId } = useParams({ from: "/project/$projectId" });
   const { activeFilePath, isSaving } = useAppStore();
   const { project, isLoading } = useProject(projectId);
+  const [isTerminalVisible, setIsTerminalVisible] = useState(true);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-bg font-sans overflow-hidden select-none text-text transition-colors duration-300">
@@ -29,7 +31,7 @@ export function ProjectPage() {
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold tracking-tight text-text">
+            <span className="text-sm font-semibold tracking-tight text-text text-white">
               {isLoading ? (
                 <Loader2
                   size={14}
@@ -62,14 +64,18 @@ export function ProjectPage() {
               </span>
             </div>
           )}
-          <div className="w-px h-4 bg-border mx-1" />
+          <div className="w-px h-4 bg-border/40" />
           <ThemeToggle />
         </div>
       </header>
 
       <div className="flex-1 min-h-0 relative p-1.5 overflow-hidden">
         <Group orientation="horizontal" className="h-full">
-          <Panel defaultSize={23} minSize={15} className="flex flex-col pr-0.5">
+          <Panel
+            defaultSize={23}
+            minSize={15}
+            className="flex flex-col pr-0.5"
+          >
             <div className="h-full rounded-2xl border border-border/30 bg-panel overflow-hidden transition-all">
               <FileExplorer projectId={projectId} />
             </div>
@@ -80,26 +86,42 @@ export function ProjectPage() {
           <Panel defaultSize={77} className="flex flex-col pl-0.5">
             <Group orientation="vertical">
               <Panel
-                defaultSize={70}
+                defaultSize={isTerminalVisible ? 70 : 100}
                 minSize={30}
                 className="flex flex-col pb-0.5"
               >
-                <div className="h-full rounded-2xl border border-border/30 bg-bg overflow-hidden transition-all">
+                <div className="h-full rounded-2xl border border-border/30 bg-bg overflow-hidden transition-all relative group/editor">
                   <CodeEditor projectId={projectId} />
+                  
+                  {/* Floating Terminal Toggle */}
+                  <button
+                    onClick={() => setIsTerminalVisible(!isTerminalVisible)}
+                    className={`absolute bottom-4 right-4 p-2 rounded-xl border border-border/40 backdrop-blur-md shadow-xl transition-all active:scale-90 z-30 ${
+                      isTerminalVisible 
+                        ? "bg-accent/10 text-accent" 
+                        : "bg-panel/80 text-text-muted hover:text-text hover:bg-panel"
+                    }`}
+                    title={isTerminalVisible ? "Hide Terminal" : "Show Terminal"}
+                  >
+                    <TerminalIcon size={16} strokeWidth={isTerminalVisible ? 3 : 2} />
+                  </button>
                 </div>
               </Panel>
 
-              <Separator className="h-1 bg-transparent transition-all cursor-row-resize group relative my-0" />
-
-              <Panel
-                defaultSize={30}
-                minSize={10}
-                className="flex flex-col pt-0.5"
-              >
-                <div className="h-full rounded-2xl border border-border/30 bg-panel overflow-hidden transition-all">
-                   <Terminal projectId={projectId} />
-                </div>
-              </Panel>
+              {isTerminalVisible && (
+                <>
+                  <Separator className="h-1 bg-transparent transition-all cursor-row-resize group relative my-0" />
+                  <Panel
+                    defaultSize={30}
+                    minSize={15}
+                    className="flex flex-col pt-0.5"
+                  >
+                    <div className="h-full rounded-2xl border border-border/30 bg-panel overflow-hidden transition-all">
+                      <Terminal projectId={projectId} />
+                    </div>
+                  </Panel>
+                </>
+              )}
             </Group>
           </Panel>
         </Group>

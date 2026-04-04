@@ -43,7 +43,6 @@ export function CodeEditor({ projectId }: { projectId: string }) {
     },
   });
 
-
   // Simple auto-save implementation
   useEffect(() => {
     if (!activeFilePath || content === lastSavedContent) {
@@ -63,10 +62,7 @@ export function CodeEditor({ projectId }: { projectId: string }) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-text-muted bg-bg space-y-8">
         <div className="p-10 rounded-3xl bg-panel border border-border">
-          <TerminalIcon
-            size={48}
-            className="opacity-40 text-primary"
-          />
+          <TerminalIcon size={48} className="opacity-40 text-primary" />
         </div>
         <div className="text-center space-y-1.5 px-6">
           <h3 className="text-lg font-bold text-text tracking-tight">
@@ -76,21 +72,6 @@ export function CodeEditor({ projectId }: { projectId: string }) {
             Select or drag files from the explorer to start building your
             project.
           </p>
-        </div>
-
-        <div className="flex flex-col gap-2.5 w-56 pt-2">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-panel rounded-xl border border-border text-[11px] font-medium">
-            <span className="text-text-muted">Run Python</span>
-            <span className="flex items-center gap-1.5 text-text-muted font-mono opacity-60">
-              <Command size={11} />R
-            </span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-2.5 bg-panel rounded-xl border border-border text-[11px] font-medium">
-            <span className="text-text-muted">Search Files</span>
-            <span className="flex items-center gap-1.5 text-text-muted font-mono opacity-60">
-              <Command size={11} />P
-            </span>
-          </div>
         </div>
       </div>
     );
@@ -114,7 +95,7 @@ export function CodeEditor({ projectId }: { projectId: string }) {
           <CodeMirror
             value={content}
             height="100%"
-            theme={theme === 'light' ? vscodeLight : vscodeDark}
+            theme={theme === "light" ? vscodeLight : vscodeDark}
             extensions={[python()]}
             onChange={(value) => setContent(value)}
             className="text-[13px] font-mono leading-relaxed h-full"
