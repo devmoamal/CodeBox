@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 
 export const corsMiddleware = cors({
   // TODO: add production origins
-  origin: isDevelopment ? "*" : [],
+  origin: "*",
   allowMethods: ["POST", "GET", "OPTIONS", "PUT", "DELETE", "PATCH"],
   allowHeaders: ["Accept", "Content-Type"],
   maxAge: 600,
