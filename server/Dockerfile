@@ -22,5 +22,5 @@ EXPOSE 3000
 # Set working directory to server
 WORKDIR /app/server
 
-# Start server
-CMD ["bun", "run", "src/index.ts"]
+# Start server using package.json script
+CMD ["bun", "run", "start"]
