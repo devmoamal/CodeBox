@@ -76,12 +76,8 @@ export function Terminal({ projectId }: TerminalProps) {
       xtermRef.current = term;
 
       // WebSocket Setup
-      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const host =
-        window.location.hostname === "localhost"
-          ? "localhost:3000"
-          : window.location.host;
-      socket = new WebSocket(`${protocol}//${host}/api/terminal/${projectId}`);
+      const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3000/api`;
+      socket = new WebSocket(`${wsUrl}/terminal/${projectId}`);
       socketRef.current = socket;
 
       socket.onopen = () => {

@@ -24,6 +24,7 @@ services:
     environment:
       - VITE_APP_PORT=80
       - VITE_API_URL=http://kufapi.local:3000/api
+      - VITE_WS_URL=ws://kufapi.local:3000/api
     depends_on:
       - server
     restart: unless-stopped

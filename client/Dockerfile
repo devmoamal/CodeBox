@@ -19,8 +19,10 @@ COPY client ./client
 
 # Build the client
 WORKDIR /app/client
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_API_URL
+ARG VITE_WS_URL
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
 RUN bun run build
 
 # Runtime stage (Using Bun instead of Nginx)
