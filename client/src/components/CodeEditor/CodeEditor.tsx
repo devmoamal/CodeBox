@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
 import { vscodeDark, vscodeLight } from "@uiw/codemirror-theme-vscode";
-import { Loader2, Terminal as TerminalIcon, Command } from "lucide-react";
+import { Loader2, Terminal as TerminalIcon } from "lucide-react";
 import { useAppStore } from "@/store";
 import { FSService } from "@/services/fs.service";
 import { useQuery, useMutation } from "@tanstack/react-query";

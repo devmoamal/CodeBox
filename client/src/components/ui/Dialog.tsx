@@ -62,7 +62,7 @@ export function Dialog({
       {/* Dialog Panel */}
       <div className="relative w-full max-w-sm bg-panel border border-border/30 rounded-xl animate-in zoom-in-95 duration-200 flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 pt-5 shrink-0">
-          <h3 className="text-sm font-bold text-text tracking-tight uppercase tracking-wider">{title}</h3>
+          <h3 className="text-sm font-bold text-text uppercase tracking-wider">{title}</h3>
           <button onClick={onClose} className="text-text-muted hover:text-text transition-colors p-1 hover:bg-hover rounded-md">
             <X size={14} />
           </button>
