@@ -19,6 +19,8 @@ RUN bun install
 
 # Build the client
 WORKDIR /app/client
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN bun run build
 
 # Runtime stage (Using Bun instead of Nginx)

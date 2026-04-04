@@ -19,10 +19,12 @@ services:
     build:
       context: .
       dockerfile: client/Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://kufapi.local:3000/api
     ports:
       - "80:80"
     environment:
-      - VITE_API_BASE_URL=http://localhost:3000/api
+      - VITE_API_BASE_URL=http://kufapi.local:3000/api
     depends_on:
       - server
     restart: unless-stopped
