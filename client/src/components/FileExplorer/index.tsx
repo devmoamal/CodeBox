@@ -3,11 +3,12 @@ import { useState } from "react";
 import { FSService } from "@/services/fs.service";
 import { useAppStore } from "@/store";
 import { buildFileTree, TreeNode } from "@/lib/tree";
-import { Dialog } from "../ui/Dialog";
+import { Dialog, Trash2, FilePlus, FolderPlus, Pencil } from "../ui/Dialog";
 import { ContextMenu, useContextMenu } from "../ui/ContextMenu";
 import { toast } from "sonner";
 import { FileExplorerHeader } from "./FileExplorerHeader";
 import { FileTreeNode } from "./FileTreeNode";
+
 
 type DialogState = {
   type: "create_file" | "create_folder" | "delete" | "rename" | null;
@@ -17,7 +18,7 @@ type DialogState = {
 
 export function FileExplorer({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
-  const { activeFilePath, toggleFolder, openedFolders, openFile } = useAppStore();
+  const { activeFilePath, toggleFolder, openedFolders, openFile, renameOpenFile, removeOpenFiles } = useAppStore();
   const [dialog, setDialog] = useState<DialogState>({ type: null });
   const [inputValue, setInputValue] = useState("");
   const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
@@ -41,8 +42,10 @@ export function FileExplorer({ projectId }: { projectId: string }) {
 
   const deleteMutation = useMutation({
     mutationFn: (path: string) => FSService.delete(projectId, path),
-    onSuccess: () => {
+    onSuccess: (_, deletedPath) => {
       queryClient.invalidateQueries({ queryKey: ["fs", projectId] });
+      // Remove deleted file from open tabs
+      removeOpenFiles([deletedPath]);
       setDialog({ type: null });
     },
   });
@@ -50,14 +53,18 @@ export function FileExplorer({ projectId }: { projectId: string }) {
   const renameMutation = useMutation({
     mutationFn: (args: { oldPath: string; newPath: string }) =>
       FSService.rename(projectId, args.oldPath, args.newPath),
-    onSuccess: () => {
+    onSuccess: (_, { oldPath, newPath }) => {
       queryClient.invalidateQueries({ queryKey: ["fs", projectId] });
+      // Invalidate old file content cache and update open tabs
+      queryClient.removeQueries({ queryKey: ["file-content", projectId, oldPath] });
+      renameOpenFile(oldPath, newPath);
       setDialog({ type: null });
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to move file");
     },
   });
+
 
   const uploadMutation = useMutation({
     mutationFn: (args: { path: string; file: File }) =>
@@ -187,19 +194,49 @@ export function FileExplorer({ projectId }: { projectId: string }) {
         onClose={() => setDialog({ type: null })}
         onConfirm={onConfirm}
         title={
-          dialog.type === "create_file"
-            ? "New File"
-            : dialog.type === "create_folder"
-            ? "New Folder"
-            : dialog.type === "delete"
-            ? "Delete"
-            : "Rename"
+          dialog.type === "create_file" ? "New File"
+          : dialog.type === "create_folder" ? "New Folder"
+          : dialog.type === "delete" ? "Delete Item"
+          : "Rename"
+        }
+        targetName={
+          dialog.type === "delete" || dialog.type === "rename"
+            ? dialog.path?.split("/").pop()
+            : undefined
+        }
+        description={
+          dialog.type === "delete"
+            ? "Are you sure you want to delete this item?"
+            : dialog.type === "rename"
+            ? "Enter a new name:"
+            : dialog.type === "create_file"
+            ? "Enter a name for the new file:"
+            : "Enter a name for the new folder:"
+        }
+        icon={
+          dialog.type === "delete" ? <Trash2 size={15} />
+          : dialog.type === "create_file" ? <FilePlus size={15} />
+          : dialog.type === "create_folder" ? <FolderPlus size={15} />
+          : <Pencil size={15} />
+        }
+        confirmText={
+          dialog.type === "delete" ? "Delete"
+          : dialog.type === "create_file" ? "Create"
+          : dialog.type === "create_folder" ? "Create"
+          : "Rename"
         }
         showInput={dialog.type !== "delete"}
         inputValue={inputValue}
         onInputChange={setInputValue}
+        inputPlaceholder={
+          dialog.type === "create_folder" ? "folder-name"
+          : dialog.type === "rename" ? dialog.path?.split("/").pop() ?? "new-name"
+          : "file.py"
+        }
         confirmVariant={dialog.type === "delete" ? "danger" : "primary"}
       />
+
+
 
       {contextMenu && <ContextMenu {...contextMenu} onClose={closeContextMenu} />}
     </div>
