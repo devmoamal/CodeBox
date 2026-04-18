@@ -35,7 +35,6 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     };
   }, [onClose]);
 
-  // Adjust position if too close to edges
   const [position, setPosition] = useState({ left: x, top: y });
 
   useEffect(() => {
@@ -46,8 +45,8 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       let left = x;
       let top = y;
 
-      if (x + offsetWidth > innerWidth) left = innerWidth - offsetWidth - 8;
-      if (y + offsetHeight > innerHeight) top = innerHeight - offsetHeight - 8;
+      if (x + offsetWidth > innerWidth) left = innerWidth - offsetWidth - 4;
+      if (y + offsetHeight > innerHeight) top = innerHeight - offsetHeight - 4;
 
       setPosition({ left, top });
     }
@@ -56,7 +55,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-200 min-w-[200px] bg-panel border border-border rounded-xl py-1.5 animate-in fade-in zoom-in-95 duration-100 backdrop-blur-md"
+      className="fixed z-[200] min-w-[160px] bg-bg border border-border py-1 flex flex-col"
       style={{ left: position.left, top: position.top }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -69,18 +68,17 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
             item.onClick();
             onClose();
           }}
-          className={`w-full flex items-center gap-3 px-3.5 py-2 text-xs font-medium transition-colors ${
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-l-2 border-transparent ${
             item.variant === "danger"
-              ? "text-red-500 hover:bg-red-500/10"
-              : "text-text-muted hover:bg-hover hover:text-text"
+              ? "text-red-600 hover:bg-red-50 hover:border-red-600"
+              : "text-muted hover:bg-panel hover:text-text hover:border-primary"
           } ${item.disabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
         >
-          {item.icon && <span className="shrink-0 opacity-70 group-hover:opacity-100">{item.icon}</span>}
+          {item.icon && <span className="shrink-0">{item.icon}</span>}
           <span className="flex-1 text-left">{item.label}</span>
         </button>
       ))}
-    </div>
-,
+    </div>,
     document.body
   );
 }

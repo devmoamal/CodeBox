@@ -1,5 +1,5 @@
 import { useAppStore, SidebarTab } from "@/store";
-import { Files, Search, GitBranch, Settings } from "lucide-react";
+import { Files, Search, Settings } from "lucide-react";
 
 interface NavItemProps {
   id: SidebarTab;
@@ -13,67 +13,52 @@ export function ActivityBar() {
   const navItems: NavItemProps[] = [
     { id: "files", icon: <Files size={20} />, label: "Files" },
     { id: "search", icon: <Search size={20} />, label: "Search" },
-    { id: "git", icon: <GitBranch size={20} />, label: "Source Control" },
   ];
 
   const handleTabClick = (id: SidebarTab) => {
-    if (activeSidebarTab === id) {
+    if (activeSidebarTab === id && isSidebarVisible) {
       toggleSidebar();
     } else {
+      if (!isSidebarVisible) toggleSidebar();
       setActiveSidebarTab(id);
     }
   };
 
   return (
-    <div className="w-[50px] flex flex-col items-center py-4 bg-panel/30 border-r border-border/30 h-full shrink-0 z-30">
-      <div className="flex-1 flex flex-col gap-2 w-full">
+    <div className="w-12 flex flex-col items-center py-2 bg-panel border-r border-border h-full shrink-0">
+      <div className="flex-1 flex flex-col w-full">
         {navItems.map((item) => {
           const isActive = activeSidebarTab === item.id && isSidebarVisible;
           return (
             <button
               key={item.id}
               onClick={() => handleTabClick(item.id)}
-              className={`group relative flex items-center justify-center w-full py-4 transition-all duration-300 outline-none ${
+              className={`flex items-center justify-center w-full h-12 border-l-2 ${
                 isActive 
-                  ? "text-accent" 
-                  : "text-text-muted hover:text-text hover:bg-white/3"
+                  ? "text-primary border-primary bg-primary-subtle" 
+                  : "text-muted border-transparent hover:text-text hover:bg-bg"
               }`}
               title={item.label}
             >
-              {/* Active Indicator Pill */}
-              {isActive && (
-                <div className="absolute left-0 w-0.5 h-5 bg-accent rounded-r-full shadow-[0_0_8px_rgba(255,212,59,0.4)]" />
-              )}
-
-              <div className={`transition-all duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,212,59,0.3)]' : 'group-hover:scale-110'}`}>
-                {item.icon}
-              </div>
-              
-              {/* Activity Dot if hidden */}
-              {!isSidebarVisible && activeSidebarTab === item.id && (
-                <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-              )}
+              {item.icon}
             </button>
           );
         })}
       </div>
 
-      <button
-        onClick={() => handleTabClick("settings")}
-        className={`group flex items-center justify-center w-full py-4 transition-all duration-200 ${
-          activeSidebarTab === "settings" && isSidebarVisible
-            ? "text-accent border-l-2 border-accent bg-accent/5"
-            : "text-text-muted hover:text-text"
-        }`}
-        title="Settings"
-      >
-        <Settings 
-          size={20} 
-          className={`transition-transform duration-200 ${
-            activeSidebarTab === "settings" && isSidebarVisible ? 'scale-110' : 'group-hover:rotate-45'
-          }`} 
-        />
-      </button>
+      <div className="flex flex-col w-full">
+        <button
+          onClick={() => handleTabClick("settings")}
+          className={`flex items-center justify-center w-full h-12 border-l-2 ${
+            activeSidebarTab === "settings" && isSidebarVisible
+              ? "text-primary border-primary bg-primary-subtle"
+              : "text-muted border-transparent hover:text-text hover:bg-bg"
+          }`}
+          title="Settings"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
     </div>
   );
 }

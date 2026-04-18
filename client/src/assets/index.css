@@ -1,63 +1,144 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: var(--bg);
-  --color-panel: var(--panel);
-  --color-hover: var(--hover);
-  --color-active: var(--active);
-  --color-border: var(--border);
-  --color-border-hover: var(--border-hover);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
+  /* DOOBOX UI REFINEMENT SYSTEM (STRICT MODE) */
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
+  --color-primary-subtle: var(--primary-subtle);
+  
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+
+  /* Editor specific colors */
+  --color-editor-bg: var(--editor-bg);
+  --color-terminal-bg: var(--terminal-bg);
 }
 
 @layer base {
   :root {
-    /* High Contrast Dynamic Theme */
-    --bg: #000000; /* Pure Black for the abyss gaps */
-    --panel: #0d0d0d; /* Clean, deep slate for cards */
-    --hover: #1e1e1e;
-    --active: #262626;
-    --border: #ffffff26; /* Crisp 15% White "Pro" border */
-    --border-hover: #ffffff40;
-    --text: #ffffff; /* White Text */
-    --text-muted: #9ca3af;
+    --primary: #2563EB;
+    --primary-hover: #1D4ED8;
+    --primary-subtle: #EFF6FF;
     
-    /* Python Theme Colors */
-    --primary: #306998; /* Python Blue */
-    --primary-hover: #4B8BBE;
-    --accent: #FFD43B; /* Python Yellow */
-    --accent-hover: #FFE873;
-    
-    background-color: var(--bg);
-    color: var(--text);
-    color-scheme: dark;
+    --bg: #FFFFFF;
+    --panel: #FAFAFA;
+    --border: #E5E7EB;
+    --text: #111827;
+    --muted: #6B7280;
+
+    --editor-bg: #FFFFFF;
+    --terminal-bg: #F8FAFC;
   }
 
-  :root.light {
-    /* Light Theme - Keep it crisp white but keep the blue/yellow markers. */
-    --bg: #ffffff;
-    --panel: #f8fafc;
-    --hover: #f1f5f9;
-    --active: #e2e8f0;
-    --border: #306998; /* Still use the Blue borders in light */
-    --border-hover: #2B5B84;
-    --text: #000000;
-    --text-muted: #64748b;
-    
-    /* Python Theme Colors */
-    --primary: #306998;
-    --primary-hover: #2B5B84;
-    --accent: #eab308;
-    --accent-hover: #ca8a04;
-    
-    background-color: var(--bg);
-    color: var(--text);
-    color-scheme: light;
+  /* 1. DooBox Dark (Strict Black) */
+  .theme-doobox-dark {
+    --bg: #000000;
+    --panel: #0A0A0A;
+    --border: #1F1F1F;
+    --text: #F8FAFC;
+    --muted: #71717A;
+    --primary-subtle: rgba(37, 99, 235, 0.15);
+    --editor-bg: #000000;
+    --terminal-bg: #000000;
+  }
+
+  /* 2. DooBox Light (Strict White) */
+  .theme-doobox-light {
+    --bg: #FFFFFF;
+    --panel: #FAFAFA;
+    --border: #E5E7EB;
+    --text: #111827;
+    --muted: #6B7280;
+    --primary-subtle: #EFF6FF;
+    --editor-bg: #FFFFFF;
+    --terminal-bg: #F8FAFC;
+  }
+
+  /* 3. Dracula */
+  .theme-dracula {
+    --bg: #282a36;
+    --panel: #21222c;
+    --border: #44475a;
+    --text: #f8f8f2;
+    --muted: #6272a4;
+    --primary: #bd93f9;
+    --primary-hover: #ff79c6;
+    --primary-subtle: rgba(189, 147, 249, 0.1);
+    --editor-bg: #282a36;
+    --terminal-bg: #1e1f29;
+  }
+
+  /* 4. One Dark */
+  .theme-one-dark {
+    --bg: #282c34;
+    --panel: #21252b;
+    --border: #3e4451;
+    --text: #abb2bf;
+    --muted: #5c6370;
+    --primary: #61afef;
+    --primary-hover: #c678dd;
+    --primary-subtle: rgba(97, 175, 239, 0.1);
+    --editor-bg: #282c34;
+    --terminal-bg: #21252b;
+  }
+
+  /* 5. Nord */
+  .theme-nord {
+    --bg: #2e3440;
+    --panel: #242933;
+    --border: #3b4252;
+    --text: #d8dee9;
+    --muted: #4c566a;
+    --primary: #88c0d0;
+    --primary-hover: #81a1c1;
+    --primary-subtle: rgba(136, 192, 208, 0.1);
+    --editor-bg: #2e3440;
+    --terminal-bg: #242933;
+  }
+
+  /* 6. GitHub Dark */
+  .theme-github-dark {
+    --bg: #0d1117;
+    --panel: #010409;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --primary: #1f6feb;
+    --primary-hover: #58a6ff;
+    --primary-subtle: rgba(31, 111, 235, 0.1);
+    --editor-bg: #0d1117;
+    --terminal-bg: #0d1117;
+  }
+
+  /* 7. Solarized Dark */
+  .theme-solarized-dark {
+    --bg: #002b36;
+    --panel: #073642;
+    --border: #586e75;
+    --text: #839496;
+    --muted: #586e75;
+    --primary: #268bd2;
+    --primary-hover: #2aa198;
+    --primary-subtle: rgba(38, 139, 210, 0.1);
+    --editor-bg: #002b36;
+    --terminal-bg: #073642;
+  }
+
+  /* 8. Solarized Light */
+  .theme-solarized-light {
+    --bg: #fdf6e3;
+    --panel: #eee8d5;
+    --border: #93a1a1;
+    --text: #657b83;
+    --muted: #93a1a1;
+    --primary: #268bd2;
+    --primary-hover: #2aa198;
+    --primary-subtle: rgba(38, 139, 210, 0.1);
+    --editor-bg: #fdf6e3;
+    --terminal-bg: #eee8d5;
   }
 }
 
@@ -67,42 +148,27 @@ html, body, #root {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-family: system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Selection Color (Python Theme) */
-::selection {
-  background-color: var(--primary);
-  color: #ffffff;
-}
-
-/* Ultra-Minimal "Disappearing" Scrollbar */
+/* Scrollbar refinement (Strict tool style) */
 ::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 10px;
-  transition: background 0.3s ease;
-}
-
-/* Only show scrollbar thumb when hovering over the container that is scrolling */
-*:hover::-webkit-scrollbar-thumb {
   background: var(--border);
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover) !important;
+  background: var(--muted);
 }
 
-::-webkit-scrollbar-corner {
-  background: transparent;
+/* All buttons show hand cursor */
+button, [role="button"], a {
+  cursor: pointer;
 }
-
