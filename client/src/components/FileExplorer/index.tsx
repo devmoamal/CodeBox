@@ -3,21 +3,11 @@ import { useState } from "react";
 import { FSService } from "@/services/fs.service";
 import { useAppStore } from "@/store";
 import { buildFileTree, TreeNode } from "@/lib/tree";
-import {
-  Folder,
-  File,
-  ChevronRight,
-  ChevronDown,
-  Plus,
-  Trash2,
-  Edit3,
-  FolderPlus,
-  FilePlus,
-  Upload,
-} from "lucide-react";
 import { Dialog } from "../ui/Dialog";
 import { ContextMenu, useContextMenu } from "../ui/ContextMenu";
 import { toast } from "sonner";
+import { FileExplorerHeader } from "./FileExplorerHeader";
+import { FileTreeNode } from "./FileTreeNode";
 
 type DialogState = {
   type: "create_file" | "create_folder" | "delete" | "rename" | null;
@@ -27,13 +17,13 @@ type DialogState = {
 
 export function FileExplorer({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
-  const { activeFilePath, toggleFolder, openedFolders } = useAppStore();
+  const { activeFilePath, toggleFolder, openedFolders, openFile } = useAppStore();
   const [dialog, setDialog] = useState<DialogState>({ type: null });
   const [inputValue, setInputValue] = useState("");
   const { contextMenu, showContextMenu, closeContextMenu } = useContextMenu();
   const [dragOverPath, setDragOverPath] = useState<string | null>(null);
 
-  const { data: nodes = [], isLoading } = useQuery({
+  const { data: nodes = [], isLoading, isRefetching } = useQuery({
     queryKey: ["fs", projectId],
     queryFn: () => FSService.list(projectId),
   });
@@ -115,48 +105,27 @@ export function FileExplorer({ projectId }: { projectId: string }) {
 
   const handleDragStart = (e: React.DragEvent, path: string) => {
     e.dataTransfer.setData("sourcePath", path);
-    // Add a ghost image or just styling if needed
   };
 
   const handleDragOver = (e: React.DragEvent, path: string | null) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragOverPath(path);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverPath(null);
   };
 
   const handleDrop = (e: React.DragEvent, targetPath: string | null) => {
     e.preventDefault();
-    e.stopPropagation();
     setDragOverPath(null);
-
     const sourcePath = e.dataTransfer.getData("sourcePath");
     const externalFiles = e.dataTransfer.files;
 
-    // 1. Handle Internal Move
     if (sourcePath) {
       if (sourcePath === targetPath) return;
-
       const fileName = sourcePath.split("/").pop();
       if (!fileName) return;
-
       const newPath = targetPath ? `${targetPath}/${fileName}` : fileName;
       if (sourcePath === newPath) return;
-
-      // Prevent moving a folder into its own descendants
-      if (targetPath?.startsWith(sourcePath + "/")) {
-        toast.error("Cannot move a folder into its own subfolder");
-        return;
-      }
-
       renameMutation.mutate({ oldPath: sourcePath, newPath });
-    }
-    // 2. Handle External File Drop
-    else if (externalFiles && externalFiles.length > 0) {
+    } else if (externalFiles && externalFiles.length > 0) {
       Array.from(externalFiles).forEach((file) => {
         const path = targetPath ? `${targetPath}/${file.name}` : file.name;
         uploadMutation.mutate({ path, file });
@@ -166,114 +135,23 @@ export function FileExplorer({ projectId }: { projectId: string }) {
 
   const renderTree = (items: TreeNode[], depth = 0) => {
     return items.map((node) => {
-      const isFolder = node.type === "folder";
-      const isOpen = isFolder && openedFolders[node.path];
-      const isActive = !isFolder && activeFilePath === node.path;
-      const isDragOver = dragOverPath === node.path;
-
-      const contextItems = [
-        ...(isFolder
-          ? [
-              {
-                label: "New File",
-                icon: <FilePlus size={12} />,
-                onClick: () => handleAction("create_file", node.path),
-              },
-              {
-                label: "New Folder",
-                icon: <FolderPlus size={12} />,
-                onClick: () => handleAction("create_folder", node.path),
-              },
-            ]
-          : []),
-        {
-          label: "Rename",
-          icon: <Edit3 size={12} />,
-          onClick: () => handleAction("rename", node.path),
-        },
-        {
-          label: "Delete",
-          icon: <Trash2 size={12} />,
-          variant: "danger" as const,
-          onClick: () => handleAction("delete", node.path),
-        },
-      ];
-
       return (
-        <div key={node.id} className="select-none">
-          <div
-            draggable
-            onDragStart={(e) => handleDragStart(e, node.path)}
-            onDragOver={(e) => isFolder && handleDragOver(e, node.path)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => isFolder && handleDrop(e, node.path)}
-            className={`flex items-center gap-2.5 px-3 py-1.5 text-xs cursor-pointer group transition-all rounded-md mx-1.5 my-0.5 ${
-              isActive
-                ? "bg-primary/15 text-primary font-medium"
-                : "text-text-muted hover:bg-hover hover:text-text"
-            } ${isDragOver ? "bg-primary/20 ring-1 ring-primary/30" : ""}`}
-            style={{ paddingLeft: `${depth * 14 + 10}px` }}
-            onClick={() => {
-              if (isFolder) toggleFolder(node.path);
-              else useAppStore.getState().openFile(node.path);
-            }}
-            onContextMenu={(e) => showContextMenu(e, contextItems)}
-          >
-            <span className="w-4 flex justify-center shrink-0">
-              {isFolder ? (
-                isOpen ? (
-                  <ChevronDown size={14} className="opacity-70" />
-                ) : (
-                  <ChevronRight size={14} className="opacity-70" />
-                )
-              ) : null}
-            </span>
-            <span className={isFolder ? "text-accent" : "text-primary"}>
-              {isFolder ? (
-                <Folder
-                  size={14}
-                  fill="currentColor"
-                  fillOpacity={0.2}
-                  strokeWidth={2.5}
-                />
-              ) : (
-                <File
-                  size={14}
-                  fill="currentColor"
-                  fillOpacity={0.1}
-                  strokeWidth={2}
-                />
-              )}
-            </span>
-            <span
-              className={`truncate ${isActive ? "text-primary font-semibold" : ""}`}
-            >
-              {node.name}
-            </span>
-
-            {/* Actions Menu */}
-            <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-2.5 shrink-0 px-2">
-              {isFolder && (
-                <Plus
-                  size={12}
-                  className="text-text-muted hover:text-text"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAction("create_file", node.path);
-                  }}
-                />
-              )}
-              <Trash2
-                size={12}
-                className="text-text-muted hover:text-red-500"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAction("delete", node.path);
-                }}
-              />
-            </div>
-          </div>
-          {isFolder && isOpen && node.children && (
+        <div key={node.id}>
+          <FileTreeNode
+            node={node}
+            depth={depth}
+            isActive={activeFilePath === node.path}
+            isOpen={!!openedFolders[node.path]}
+            isDragOver={dragOverPath === node.path}
+            onToggle={toggleFolder}
+            onOpen={openFile}
+            onAction={handleAction}
+            onContextMenu={showContextMenu}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          />
+          {node.type === "folder" && openedFolders[node.path] && node.children && (
             <div>{renderTree(node.children, depth + 1)}</div>
           )}
         </div>
@@ -282,58 +160,28 @@ export function FileExplorer({ projectId }: { projectId: string }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-transparent overflow-hidden">
-      <div className="h-10 flex items-center px-4 shrink-0 bg-transparent">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-            Files
-          </span>
-        </div>
-        <div className="flex gap-2.5 ml-auto">
-          <FilePlus
-            size={14}
-            className="cursor-pointer text-text-muted hover:text-text transition-colors"
-            onClick={() => handleAction("create_file")}
-          />
-          <FolderPlus
-            size={14}
-            className="cursor-pointer text-text-muted hover:text-text transition-colors"
-            onClick={() => handleAction("create_folder")}
-          />
-        </div>
-      </div>
+    <div className="flex flex-col h-full w-full bg-panel overflow-hidden">
+      <FileExplorerHeader
+        isRefetching={isRefetching}
+        onRefresh={() => queryClient.invalidateQueries({ queryKey: ["fs", projectId] })}
+        onCreateFile={() => handleAction("create_file")}
+        onCreateFolder={() => handleAction("create_folder")}
+      />
 
       <div
-        className={`flex-1 overflow-auto py-2 custom-scrollbar transition-colors ${dragOverPath === null && dragOverPath !== undefined ? "bg-primary/5" : ""}`}
+        className="flex-1 overflow-auto py-1"
         onDragOver={(e) => handleDragOver(e, null)}
-        onDragLeave={handleDragLeave}
         onDrop={(e) => handleDrop(e, null)}
       >
         {isLoading ? (
-          <div className="px-5 py-3 text-xs text-text-muted animate-pulse font-mono tracking-tight">
-            Syncing files...
-          </div>
-        ) : nodes.length === 0 ? (
-          <div className="px-6 py-12 text-center flex flex-col items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-hover flex items-center justify-center text-text-muted">
-              <Upload size={18} />
-            </div>
-            <p className="text-xs text-text-muted">No files yet.</p>
-            <div className="flex flex-col gap-2 w-full">
-              <button
-                onClick={() => handleAction("create_file")}
-                className="text-[10px] w-full bg-primary/10 text-primary px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors font-semibold"
-              >
-                + New File
-              </button>
-            </div>
+          <div className="px-4 py-2 text-xs text-muted font-mono uppercase">
+            Loading...
           </div>
         ) : (
           renderTree(tree)
         )}
       </div>
 
-      {/* Dialog Rendering */}
       <Dialog
         isOpen={dialog.type !== null}
         onClose={() => setDialog({ type: null })}
@@ -342,38 +190,18 @@ export function FileExplorer({ projectId }: { projectId: string }) {
           dialog.type === "create_file"
             ? "New File"
             : dialog.type === "create_folder"
-              ? "New Folder"
-              : dialog.type === "delete"
-                ? "Delete Resource"
-                : dialog.type === "rename"
-                  ? "Rename Resource"
-                  : ""
+            ? "New Folder"
+            : dialog.type === "delete"
+            ? "Delete"
+            : "Rename"
         }
-        description={
-          dialog.type === "delete"
-            ? `Are you sure you want to delete ${dialog.path}?`
-            : undefined
-        }
-        showInput={
-          dialog.type === "create_file" ||
-          dialog.type === "create_folder" ||
-          dialog.type === "rename"
-        }
+        showInput={dialog.type !== "delete"}
         inputValue={inputValue}
         onInputChange={setInputValue}
         confirmVariant={dialog.type === "delete" ? "danger" : "primary"}
-        confirmText={
-          dialog.type === "delete"
-            ? "Delete"
-            : dialog.type === "rename"
-              ? "Rename"
-              : "Create"
-        }
       />
 
-      {contextMenu && (
-        <ContextMenu {...contextMenu} onClose={closeContextMenu} />
-      )}
+      {contextMenu && <ContextMenu {...contextMenu} onClose={closeContextMenu} />}
     </div>
   );
 }
