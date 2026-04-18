@@ -1,12 +1,12 @@
 import { TreeNode } from "@/lib/tree";
-import { getFileIcon } from "@/lib/icons";
+import { getFileIcon, getFolderIcon } from "@/lib/icons";
 import {
-  Folder,
   ChevronRight,
   ChevronDown,
   FilePlus,
   FolderPlus,
   Trash2,
+  Pencil,
 } from "lucide-react";
 
 type FileActionType = "create_file" | "create_folder" | "delete" | "rename";
@@ -69,21 +69,33 @@ export function FileTreeNode({
     },
   ];
 
+  const indent = depth * 12;
+
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, node.path)}
       onDragOver={(e) => isFolder && onDragOver(e, node.path)}
       onDrop={(e) => isFolder && onDrop(e, node.path)}
-      className={`flex items-center gap-1.5 px-3 py-1 text-sm cursor-pointer group border-l-2 ${
+      className={`relative flex items-center gap-1.5 px-3 py-1 text-sm cursor-pointer group border-l-2 transition-colors ${
         isActive
           ? "bg-primary-subtle border-primary text-text font-medium"
           : "border-transparent text-muted hover:bg-bg hover:text-text"
       } ${isDragOver ? "bg-primary-subtle border-primary" : ""}`}
-      style={{ paddingLeft: `${depth * 12 + 12}px` }}
+      style={{ paddingLeft: `${indent + 12}px` }}
       onClick={() => (isFolder ? onToggle(node.path) : onOpen(node.path))}
       onContextMenu={(e) => onContextMenu(e, contextItems)}
+      title={node.path}
     >
+      {/* Indentation guide lines for depth */}
+      {Array.from({ length: depth }).map((_, i) => (
+        <span
+          key={i}
+          className="absolute top-0 bottom-0 w-px bg-border opacity-40"
+          style={{ left: `${i * 12 + 16}px` }}
+        />
+      ))}
+
       <span className="w-4 flex justify-center shrink-0">
         {isFolder ? (
           isOpen ? (
@@ -94,11 +106,11 @@ export function FileTreeNode({
         ) : null}
       </span>
       <span className="shrink-0">
-        {isFolder ? <Folder size={14} className="text-primary" /> : getFileIcon(node.path)}
+        {isFolder ? getFolderIcon(node.name, isOpen, 14) : getFileIcon(node.path)}
       </span>
-      <span className="truncate">{node.name}</span>
+      <span className="truncate flex-1">{node.name}</span>
 
-      <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 shrink-0 px-1">
+      <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 shrink-0 px-1 transition-opacity">
         {isFolder && (
           <>
             <span title="New File">
@@ -123,6 +135,16 @@ export function FileTreeNode({
             </span>
           </>
         )}
+        <span title="Rename">
+          <Pencil
+            size={12}
+            className="hover:text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction("rename", node.path);
+            }}
+          />
+        </span>
         <span title="Delete">
           <Trash2
             size={12}

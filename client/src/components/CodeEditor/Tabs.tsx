@@ -6,6 +6,7 @@ export function EditorTabs() {
   const {
     openFiles,
     activeFilePath,
+    unsavedFiles,
     setActiveFile,
     closeFile,
     isRunning,
@@ -31,17 +32,19 @@ export function EditorTabs() {
       <div className="flex-1 flex overflow-x-auto no-scrollbar">
         {openFiles.map((path) => {
           const isActive = activeFilePath === path;
+          const isDirty = unsavedFiles.has(path);
           const fileName = path.split("/").pop();
 
           return (
             <div
               key={path}
-              className={`flex items-center gap-2 px-3 h-full cursor-pointer border-r border-border min-w-[100px] max-w-[200px] group ${
+              className={`flex items-center gap-1.5 px-3 h-full cursor-pointer border-r border-border min-w-[100px] max-w-[200px] group ${
                 isActive
                   ? "bg-bg border-b border-b-primary text-text font-medium"
                   : "text-muted hover:bg-bg hover:text-text"
               }`}
               onClick={() => setActiveFile(path)}
+              title={path}
             >
               <span className="shrink-0">
                 {getFileIcon(path, 12)}
@@ -49,12 +52,27 @@ export function EditorTabs() {
               <span className="text-xs truncate flex-1">
                 {fileName}
               </span>
+
+              {/* Unsaved dot or close button */}
+              {isDirty ? (
+                <span
+                  className="unsaved-dot w-1.5 h-1.5 rounded-full bg-current shrink-0 group-hover:hidden"
+                  title="Unsaved changes"
+                />
+              ) : null}
               <button
-                className={`p-0.5 hover:bg-panel ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                className={`p-0.5 hover:bg-panel shrink-0 ${
+                  isDirty
+                    ? "opacity-0 group-hover:opacity-100"
+                    : isActive
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-100"
+                }`}
                 onClick={(e) => {
                   e.stopPropagation();
                   closeFile(path);
                 }}
+                title="Close tab"
               >
                 <X size={10} />
               </button>
