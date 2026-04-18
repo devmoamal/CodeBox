@@ -1,7 +1,7 @@
 import { app } from "@/app";
 import { env } from "@/config/env.config";
 import { logger } from "@/lib/logger";
-import { websocket } from "@/routes/api/terminal";
+import { websocket } from "@/lib/ws";
 
 export default {
   port: env.PORT,

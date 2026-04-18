@@ -1,10 +1,8 @@
-import { createBunWebSocket } from "hono/bun";
+import { upgradeWebSocket } from "@/lib/ws";
 import { Hono } from "hono";
 import { logger } from "@/lib/logger";
 import { TerminalSession } from "@/lib/terminal";
 import { Storage } from "@/lib/storage";
-
-export const { upgradeWebSocket, websocket } = createBunWebSocket();
 
 const router = new Hono();
 

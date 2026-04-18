@@ -60,7 +60,11 @@ export class TerminalSession {
 
   private resolveSecurePath(target: string): string | null {
     const projectRoot = resolve(this.options.cwd);
-    const resolved = resolve(this.cwd, target);
+    
+    // Normalize target to be relative if it starts with a slash
+    const normalizedTarget = target.startsWith('/') ? target.slice(1) : target;
+    const resolved = resolve(this.options.cwd, normalizedTarget);
+
     if (!resolved.startsWith(projectRoot)) {
         return null;
     }
@@ -197,6 +201,11 @@ export class TerminalSession {
   }
 
   private async handleLocalShellInput(data: string) {
+    if (data.length > 1 && data.includes("\r")) {
+      // Echo the whole block command if it contains a carriage return
+      this.send(data.replace("\r", ""));
+    }
+
     for (let i = 0; i < data.length; i++) {
         const char = data[i];
 
@@ -228,7 +237,9 @@ export class TerminalSession {
             this.handleTabCompletion();
         } else if (char.length === 1 && char.charCodeAt(0) >= 32) { // Printables
             this.commandBuffer += char;
-            this.send(char);
+            if (data.length === 1) {
+              this.send(char);
+            }
         }
     }
   }
@@ -239,6 +250,7 @@ export class TerminalSession {
     const args = parts.slice(1);
 
     this.onStatusCallback?.("running");
+    logger.info(`Terminal executing command: ${line} in ${this.cwd}`);
 
     switch (cmd) {
       case "ls":
@@ -423,8 +435,19 @@ export class TerminalSession {
         return;
     }
 
-    this.send(`\x1b[2m[CodeBox] Running python3 ${file}...\x1b[0m\r\n`);
-    await this.handleExternalCommand("python3", ["-u", fullPath, ...args]);
+    // Try python3 then fallback to python
+    let pythonCmd = "python3";
+    try {
+        const check = Bun.spawnSync(["which", "python3"]);
+        if (check.exitCode !== 0) {
+            pythonCmd = "python";
+        }
+    } catch (e) {
+        pythonCmd = "python";
+    }
+
+    this.send(`\x1b[2m[CodeBox] Running ${pythonCmd} ${file}...\x1b[0m\r\n`);
+    await this.handleExternalCommand(pythonCmd, ["-u", fullPath, ...args]);
   }
 
   private async executeFileSystemOp(type: "move" | "delete", src: string, dest?: string) {

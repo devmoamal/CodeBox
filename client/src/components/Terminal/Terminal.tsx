@@ -5,6 +5,7 @@ import { WebLinksAddon } from "xterm-addon-web-links";
 import "xterm/css/xterm.css";
 
 import { useAppStore } from "@/store";
+import { getTerminalTheme } from "@/lib/terminal-themes";
 
 interface TerminalProps {
   projectId: string;
@@ -17,34 +18,7 @@ export function Terminal({ projectId }: TerminalProps) {
 
   const isMounted = useRef(true);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const { theme: appTheme } = useAppStore();
-
-  // Helper to get theme colors
-  const getTheme = (theme: string) => {
-    const isLight = theme === "light";
-    return {
-      background: isLight ? "#ffffff" : "#000000",
-      foreground: isLight ? "#000000" : "#ffffff",
-      cursor: "#FFD43B",
-      selectionBackground: isLight ? "#e2e8f0" : "#306998",
-      black: "#000000",
-      red: "#f43f5e",
-      green: "#10b981",
-      yellow: "#FFD43B",
-      blue: "#306998",
-      magenta: "#8b5cf6",
-      cyan: "#06b6d4",
-      white: isLight ? "#64748b" : "#ffffff",
-      brightBlack: isLight ? "#94a3b8" : "#4b5563",
-      brightRed: "#fb7185",
-      brightGreen: "#34d399",
-      brightYellow: "#FFE873",
-      brightBlue: "#4B8BBE",
-      brightMagenta: "#a78bfa",
-      brightCyan: "#22d3ee",
-      brightWhite: "#ffffff",
-    };
-  };
+  const { theme } = useAppStore();
 
   useEffect(() => {
     isMounted.current = true;
@@ -60,10 +34,10 @@ export function Terminal({ projectId }: TerminalProps) {
 
       term = new XTerm({
         cursorBlink: true,
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: "400",
-        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-        theme: getTheme(appTheme),
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+        theme: getTerminalTheme(theme),
         allowProposedApi: true,
       });
 
@@ -75,7 +49,6 @@ export function Terminal({ projectId }: TerminalProps) {
       term.open(terminalRef.current);
       xtermRef.current = term;
 
-      // WebSocket Setup
       const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3000/api`;
       socket = new WebSocket(`${wsUrl}/terminal/${projectId}`);
       socketRef.current = socket;
@@ -93,6 +66,12 @@ export function Terminal({ projectId }: TerminalProps) {
                 rows: dims.rows,
               }),
             );
+          }
+
+          const pendingCommand = useAppStore.getState().terminalCommand;
+          if (pendingCommand && socket.readyState === WebSocket.OPEN) {
+            socket.send(pendingCommand + "\r");
+            setTimeout(() => useAppStore.getState().sendTerminalCommand(""), 0);
           }
         } catch (e) {
           /* ignore */
@@ -185,30 +164,24 @@ export function Terminal({ projectId }: TerminalProps) {
     };
   }, [projectId]);
 
-  // Handle theme updates separately
+  // Update theme when store theme changes
   useEffect(() => {
     if (xtermRef.current) {
-      try {
-        xtermRef.current.options.theme = getTheme(appTheme);
-      } catch (e) {
-        /* ignore */
-      }
+      xtermRef.current.options.theme = getTerminalTheme(theme);
     }
-  }, [appTheme]);
+  }, [theme]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-transparent overflow-hidden">
-      <div className="h-10 flex items-center px-4 shrink-0 bg-panel/30">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
-            Terminal
-          </span>
-        </div>
+    <div className="flex flex-col h-full w-full bg-terminal-bg overflow-hidden">
+      <div className="h-8 flex items-center px-4 shrink-0 border-b border-border bg-panel">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
+          Terminal
+        </span>
       </div>
-      <div className="flex-1 min-h-0 relative bg-bg">
+      <div className="flex-1 min-h-0 relative">
         <div
           ref={terminalRef}
-          className="absolute left-0 right-0 top-0 bottom-8 px-4 pt-2"
+          className="absolute inset-0 px-2 py-1"
         />
       </div>
     </div>
