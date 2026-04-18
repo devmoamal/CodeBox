@@ -11,7 +11,8 @@ COPY server/package.json ./server/package.json
 COPY client/package.json ./client/package.json
 
 # Install dependencies for the whole workspace
-RUN bun install
+RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
 
 # Now pull in the full source for needed workspaces
 COPY shared ./shared
