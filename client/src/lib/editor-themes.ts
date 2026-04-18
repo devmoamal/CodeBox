@@ -3,7 +3,8 @@ import { tags as t } from '@lezer/highlight';
 import { Theme } from "@/store";
 
 export const getEditorTheme = (themeName: Theme) => {
-  const isDark = !themeName.includes("light") && themeName !== "nord";
+  // Nord is dark despite having a blueish palette; only light themes are solarized-light and doobox-light
+  const isDark = !themeName.includes("light");
   
   const colors: Record<Theme, { bg: string; text: string; caret: string; selection: string }> = {
     "doobox-dark": { bg: "#000000", text: "#F8FAFC", caret: "#2563EB", selection: "rgba(37, 99, 235, 0.2)" },
@@ -14,6 +15,7 @@ export const getEditorTheme = (themeName: Theme) => {
     "github-dark": { bg: "#0d1117", text: "#c9d1d9", caret: "#1f6feb", selection: "rgba(31, 111, 235, 0.2)" },
     "solarized-dark": { bg: "#002b36", text: "#839496", caret: "#268bd2", selection: "rgba(38, 139, 210, 0.2)" },
     "solarized-light": { bg: "#fdf6e3", text: "#657b83", caret: "#268bd2", selection: "rgba(38, 139, 210, 0.1)" },
+    "coffee": { bg: "#1C1410", text: "#E8D5B7", caret: "#C8873A", selection: "rgba(200, 135, 58, 0.2)" },
   };
 
   const themeColors = colors[themeName] || colors["doobox-dark"];

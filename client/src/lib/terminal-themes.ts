@@ -11,6 +11,7 @@ export const getTerminalTheme = (themeName: Theme) => {
     "github-dark": { background: "#0d1117", foreground: "#c9d1d9", cursor: "#1f6feb", black: "#010409", blue: "#1f6feb" },
     "solarized-dark": { background: "#073642", foreground: "#839496", cursor: "#268bd2", black: "#002b36", blue: "#268bd2" },
     "solarized-light": { background: "#eee8d5", foreground: "#657b83", cursor: "#268bd2", black: "#fdf6e3", blue: "#268bd2" },
+    "coffee": { background: "#160F0A", foreground: "#E8D5B7", cursor: "#C8873A", black: "#1C1410", blue: "#C8873A" },
   };
 
   const t = themes[themeName] || themes["doobox-dark"];

@@ -1,18 +1,23 @@
-import { Terminal as TerminalIcon } from "lucide-react";
+import { Box, FileCode, Keyboard } from "lucide-react";
 
 export function WelcomeScreen() {
+  const shortcuts = [
+    { keys: ["Ctrl", "S"], label: "Save file" },
+    { keys: ["Ctrl", "B"], label: "Toggle sidebar" },
+  ];
+
   return (
-    <div className="flex flex-col items-center justify-center h-full text-muted bg-editor-bg space-y-4">
-      <div className="p-6 border border-border bg-panel">
-        <TerminalIcon size={32} className="opacity-20" />
-      </div>
-      <div className="text-center space-y-1 px-6">
-        <h3 className="text-sm font-bold uppercase tracking-widest text-text">
-          No File Selected
-        </h3>
-        <p className="text-xs text-muted max-w-[200px]">
-          Select a file from the explorer to begin.
-        </p>
+    <div className="flex flex-col items-center justify-center h-full bg-editor-bg text-center select-none px-8">
+      <div className="flex flex-col items-center gap-2 max-w-xs">
+        {/* Logo mark */}
+        <div className="w-12 h-12 border border-primary flex items-center justify-center text-primary">
+          <Box size={24} />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs text-muted leading-relaxed">
+            Open a file from the explorer <br /> to start editing.
+          </p>
+        </div>
       </div>
     </div>
   );

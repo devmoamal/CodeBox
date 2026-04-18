@@ -8,6 +8,7 @@ import {
   WholeWord,
 } from "lucide-react";
 import { SearchResultItem } from "./SearchResultItem";
+import { apiClient } from "@/lib/api";
 
 interface SearchResult {
   path: string;
@@ -47,15 +48,17 @@ export function SearchSidebar({ projectId }: { projectId: string }) {
 
       setIsLoading(true);
       try {
-        let url = `/api/projects/${projectId}/search?q=${encodeURIComponent(searchQuery)}`;
-        if (matchCase) url += "&matchCase=true";
-        if (wholeWord) url += "&wholeWord=true";
+        const params: Record<string, string> = { q: searchQuery };
+        if (matchCase) params.matchCase = "true";
+        if (wholeWord) params.wholeWord = "true";
 
-        const response = await fetch(url);
-        const data = await response.json();
+        const response = await apiClient.get<unknown, { ok: boolean; data: SearchResult[] }>(
+          `/projects/${projectId}/search`,
+          { params }
+        );
 
-        if (data.ok) {
-          const grouped = groupResults(data.data || []);
+        if (response.ok) {
+          const grouped = groupResults(response.data || []);
           setResults(grouped);
         }
       } catch (error) {
@@ -88,7 +91,7 @@ export function SearchSidebar({ projectId }: { projectId: string }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search..."
-              className="w-full bg-bg border border-border pl-8 pr-16 py-1.5 text-xs focus:border-primary outline-none placeholder:text-muted"
+              className="w-full bg-bg border border-border pl-8 pr-16 py-1.5 text-xs focus:border-primary outline-none placeholder:text-muted transition-colors"
             />
             <SearchIcon
               size={14}
@@ -98,14 +101,14 @@ export function SearchSidebar({ projectId }: { projectId: string }) {
             <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
               <button
                 onClick={() => setMatchCase(!matchCase)}
-                className={`p-1 border ${matchCase ? "bg-primary border-primary text-white" : "border-transparent text-muted hover:text-text"}`}
+                className={`p-1 border transition-colors ${matchCase ? "bg-primary border-primary text-white" : "border-transparent text-muted hover:text-text"}`}
                 title="Match Case"
               >
                 <CaseSensitive size={12} />
               </button>
               <button
                 onClick={() => setWholeWord(!wholeWord)}
-                className={`p-1 border ${wholeWord ? "bg-primary border-primary text-white" : "border-transparent text-muted hover:text-text"}`}
+                className={`p-1 border transition-colors ${wholeWord ? "bg-primary border-primary text-white" : "border-transparent text-muted hover:text-text"}`}
                 title="Whole Word"
               >
                 <WholeWord size={12} />
@@ -133,7 +136,7 @@ export function SearchSidebar({ projectId }: { projectId: string }) {
           <div key={group.path} className="space-y-1">
             <div className="flex items-center gap-2 px-2 py-1 text-xs font-bold text-muted uppercase tracking-tight">
               <FileText size={12} className="shrink-0" />
-              <span className="truncate flex-1">
+              <span className="truncate flex-1" title={group.path}>
                 {group.path.split("/").pop()}
               </span>
               <span className="text-[10px] border border-border px-1.5 bg-bg">

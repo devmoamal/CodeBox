@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* DOOBOX UI REFINEMENT SYSTEM (STRICT MODE) */
+  /* CODEBOX UI SYSTEM */
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-subtle: var(--primary-subtle);
@@ -15,6 +15,9 @@
   /* Editor specific colors */
   --color-editor-bg: var(--editor-bg);
   --color-terminal-bg: var(--terminal-bg);
+
+  /* Coffee theme accent (defined here for completeness) */
+  --color-coffee-accent: #C8873A;
 }
 
 @layer base {
@@ -91,7 +94,7 @@
     --panel: #242933;
     --border: #3b4252;
     --text: #d8dee9;
-    --muted: #4c566a;
+    --muted: #6d7a96;
     --primary: #88c0d0;
     --primary-hover: #81a1c1;
     --primary-subtle: rgba(136, 192, 208, 0.1);
@@ -133,12 +136,26 @@
     --panel: #eee8d5;
     --border: #93a1a1;
     --text: #657b83;
-    --muted: #93a1a1;
+    --muted: #7a8d8d;
     --primary: #268bd2;
     --primary-hover: #2aa198;
     --primary-subtle: rgba(38, 139, 210, 0.1);
     --editor-bg: #fdf6e3;
     --terminal-bg: #eee8d5;
+  }
+
+  /* 9. Coffee */
+  .theme-coffee {
+    --bg: #1C1410;
+    --panel: #231A13;
+    --border: #3D2B1A;
+    --text: #E8D5B7;
+    --muted: #8B7355;
+    --primary: #C8873A;
+    --primary-hover: #D4944A;
+    --primary-subtle: rgba(200, 135, 58, 0.12);
+    --editor-bg: #1C1410;
+    --terminal-bg: #160F0A;
   }
 }
 
@@ -153,7 +170,12 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar refinement (Strict tool style) */
+/* Smooth micro-interactions on all interactive elements */
+button, [role="button"], a, input, select {
+  transition: color 0.1s ease, background-color 0.1s ease, border-color 0.1s ease, opacity 0.1s ease;
+}
+
+/* Scrollbar refinement */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -163,6 +185,7 @@ html, body, #root {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
@@ -171,4 +194,22 @@ html, body, #root {
 /* All buttons show hand cursor */
 button, [role="button"], a {
   cursor: pointer;
+}
+
+/* Utility: hide scrollbar but allow scroll */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Unsaved file indicator dot animation */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.unsaved-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
 }

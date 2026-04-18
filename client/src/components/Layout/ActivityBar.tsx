@@ -8,7 +8,12 @@ interface NavItemProps {
 }
 
 export function ActivityBar() {
-  const { activeSidebarTab, isSidebarVisible, toggleSidebar, setActiveSidebarTab } = useAppStore();
+  const {
+    activeSidebarTab,
+    isSidebarVisible,
+    toggleSidebar,
+    setActiveSidebarTab,
+  } = useAppStore();
 
   const navItems: NavItemProps[] = [
     { id: "files", icon: <Files size={20} />, label: "Files" },
@@ -25,7 +30,7 @@ export function ActivityBar() {
   };
 
   return (
-    <div className="w-12 flex flex-col items-center py-2 bg-panel border-r border-border h-full shrink-0">
+    <div className="w-12 flex flex-col items-center bg-panel border-r border-border h-full shrink-0">
       <div className="flex-1 flex flex-col w-full">
         {navItems.map((item) => {
           const isActive = activeSidebarTab === item.id && isSidebarVisible;
@@ -34,8 +39,8 @@ export function ActivityBar() {
               key={item.id}
               onClick={() => handleTabClick(item.id)}
               className={`flex items-center justify-center w-full h-12 border-l-2 ${
-                isActive 
-                  ? "text-primary border-primary bg-primary-subtle" 
+                isActive
+                  ? "text-primary border-primary bg-primary-subtle"
                   : "text-muted border-transparent hover:text-text hover:bg-bg"
               }`}
               title={item.label}
