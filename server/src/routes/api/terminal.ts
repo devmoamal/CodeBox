@@ -64,6 +64,11 @@ router.get(
             if (ws.readyState === 1) {
               ws.send(`__CB_STATUS__:${status}`);
             }
+          },
+          () => {
+            if (ws.readyState === 1) {
+              ws.send(`__CB_FS_CHANGED__`);
+            }
           }
         );
 

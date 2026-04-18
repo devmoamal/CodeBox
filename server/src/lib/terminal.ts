@@ -19,6 +19,7 @@ export class TerminalSession {
   private procCommandBuffer: string = "";
   private onDataCallback?: (data: string) => void;
   private onStatusCallback?: (status: "running" | "idle") => void;
+  private onFsChangedCallback?: () => void;
   private activeProc: Subprocess<"pipe", "pipe", "pipe"> | null = null;
   private history: string[] = [];
   private historyIndex: number = -1;
@@ -40,10 +41,12 @@ export class TerminalSession {
   public start(
     onData: (data: string) => void,
     _onExit: (exitCode: number, signal?: number) => void,
-    onStatus?: (status: "running" | "idle") => void
+    onStatus?: (status: "running" | "idle") => void,
+    onFsChanged?: () => void
   ) {
     this.onDataCallback = onData;
     this.onStatusCallback = onStatus;
+    this.onFsChangedCallback = onFsChanged;
 
     this.writePrompt();
     return { pid: process.pid }; // Placeholder for compatibility
@@ -60,13 +63,18 @@ export class TerminalSession {
 
   private resolveSecurePath(target: string): string | null {
     const projectRoot = resolve(this.options.cwd);
-    
-    // Normalize target to be relative if it starts with a slash
-    const normalizedTarget = target.startsWith('/') ? target.slice(1) : target;
-    const resolved = resolve(this.options.cwd, normalizedTarget);
 
+    // Handle ~ as project root
+    if (target === "~" || target === "") {
+      return projectRoot;
+    }
+
+    // Resolve against current working directory (handles both relative and absolute)
+    const resolved = resolve(this.cwd, target);
+
+    // Ensure the resolved path stays within the project root
     if (!resolved.startsWith(projectRoot)) {
-        return null;
+      return null;
     }
     return resolved;
   }
@@ -472,9 +480,11 @@ export class TerminalSession {
         const relDest = relative(projectRoot, absDest);
         await Storage.changeFileDir(join(this.options.projectId || "", relSrc), join(this.options.projectId || "", relDest));
         this.send(`\x1b[2m[CodeBox] Success: ${src} -> ${dest}\x1b[0m\r\n`);
+        this.onFsChangedCallback?.();
       } else if (type === "delete") {
         await Storage.delete(join(this.options.projectId || "", relSrc));
         this.send(`\x1b[2m[CodeBox] Deleted ${src}\x1b[0m\r\n`);
+        this.onFsChangedCallback?.();
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
