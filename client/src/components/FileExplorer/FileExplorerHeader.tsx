@@ -1,6 +1,4 @@
 import { 
-  Plus, 
-  Trash2, 
   FilePlus, 
   FolderPlus, 
   RefreshCcw 

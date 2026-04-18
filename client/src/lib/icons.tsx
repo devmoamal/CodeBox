@@ -2,7 +2,6 @@ import {
   File, 
   FileJson, 
   FileText, 
-  FileType, 
   Image, 
   Terminal, 
   Hash, 

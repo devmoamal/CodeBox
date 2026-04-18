@@ -101,35 +101,38 @@ export function FileTreeNode({
       <div className="ml-auto opacity-0 group-hover:opacity-100 flex items-center gap-1 shrink-0 px-1">
         {isFolder && (
           <>
-            <FilePlus
-              size={12}
-              className="hover:text-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAction("create_file", node.path);
-              }}
-              title="New File"
-            />
-            <FolderPlus
-              size={12}
-              className="hover:text-primary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onAction("create_folder", node.path);
-              }}
-              title="New Folder"
-            />
+            <span title="New File">
+              <FilePlus
+                size={12}
+                className="hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction("create_file", node.path);
+                }}
+              />
+            </span>
+            <span title="New Folder">
+              <FolderPlus
+                size={12}
+                className="hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAction("create_folder", node.path);
+                }}
+              />
+            </span>
           </>
         )}
-        <Trash2
-          size={12}
-          className="hover:text-red-600"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAction("delete", node.path);
-          }}
-          title="Delete"
-        />
+        <span title="Delete">
+          <Trash2
+            size={12}
+            className="hover:text-red-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAction("delete", node.path);
+            }}
+          />
+        </span>
       </div>
     </div>
   );
