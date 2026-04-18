@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { python } from "@codemirror/lang-python";
+import { EditorView } from "@codemirror/view";
 import { Loader2 } from "lucide-react";
 import { useAppStore } from "@/store";
 import { FSService } from "@/services/fs.service";
@@ -11,12 +12,16 @@ import { getEditorTheme } from "@/lib/editor-themes";
 import { WelcomeScreen } from "./WelcomeScreen";
 
 export function CodeEditor({ projectId }: { projectId: string }) {
-  const { activeFilePath, openFiles, setIsSaving, theme } = useAppStore();
+  const { activeFilePath, openFiles, setIsSaving, theme, fontSize, markDirty, markClean } = useAppStore();
   const [content, setContent] = useState("");
   const [lastSavedContent, setLastSavedContent] = useState("");
   const { contextMenu, closeContextMenu } = useContextMenu();
 
   const editorTheme = useMemo(() => getEditorTheme(theme), [theme]);
+  const fontSizeExt = useMemo(
+    () => EditorView.theme({ "&": { fontSize: `${fontSize}px` }, ".cm-content": { fontFamily: "monospace" } }),
+    [fontSize]
+  );
 
   // Fetch file content
   const { data: fileData, isLoading } = useQuery({
@@ -43,6 +48,7 @@ export function CodeEditor({ projectId }: { projectId: string }) {
     onSuccess: (_, newContent) => {
       setIsSaving(false);
       setLastSavedContent(newContent);
+      if (activeFilePath) markClean(activeFilePath);
     },
   });
 
@@ -74,6 +80,7 @@ export function CodeEditor({ projectId }: { projectId: string }) {
     }
 
     setIsSaving(true);
+    markDirty(activeFilePath);
     const timer = setTimeout(() => {
       saveMutation.mutate(content);
     }, 2000); // Increased auto-save timer slightly since we have manual save now
@@ -99,9 +106,9 @@ export function CodeEditor({ projectId }: { projectId: string }) {
             value={content}
             height="100%"
             theme={editorTheme}
-            extensions={[python()]}
+            extensions={[python(), fontSizeExt]}
             onChange={(value) => setContent(value)}
-            className="text-sm font-mono leading-none h-full"
+            className="h-full font-mono"
             basicSetup={{
               foldGutter: true,
               dropCursor: true,
