@@ -24,7 +24,7 @@ export function getFileIcon(path: string, size = 14) {
  */
 export function getFolderIcon(
   folderName: string,
-  isOpen = false,
+  _isOpen = false,
   size = 14
 ) {
   return (

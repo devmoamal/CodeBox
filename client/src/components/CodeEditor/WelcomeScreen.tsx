@@ -1,11 +1,6 @@
-import { Box, FileCode, Keyboard } from "lucide-react";
+import { Box } from "lucide-react";
 
 export function WelcomeScreen() {
-  const shortcuts = [
-    { keys: ["Ctrl", "S"], label: "Save file" },
-    { keys: ["Ctrl", "B"], label: "Toggle sidebar" },
-  ];
-
   return (
     <div className="flex flex-col items-center justify-center h-full bg-editor-bg text-center select-none px-8">
       <div className="flex flex-col items-center gap-2 max-w-xs">

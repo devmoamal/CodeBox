@@ -1,5 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { X, Trash2, FilePlus, FolderPlus, Pencil, AlertTriangle } from "lucide-react";
+import {
+  X,
+  Trash2,
+  FilePlus,
+  FolderPlus,
+  Pencil,
+  AlertTriangle,
+} from "lucide-react";
 
 interface DialogProps {
   isOpen: boolean;
@@ -59,15 +66,16 @@ export function Dialog({
   const isDanger = confirmVariant === "danger";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/65" onClick={onClose} />
 
       {/* Panel */}
       <div className="relative w-full max-w-xs bg-bg border border-border flex flex-col overflow-hidden">
-
         {/* Header */}
-        <div className={`flex items-center justify-between px-4 py-3 border-b border-border ${isDanger ? "border-red-600/40" : ""}`}>
+        <div
+          className={`flex items-center justify-between px-4 py-3 border-b border-border ${isDanger ? "border-red-600/40" : ""}`}
+        >
           <div className="flex items-center gap-2">
             {icon && (
               <span className={isDanger ? "text-red-500" : "text-primary"}>
@@ -76,7 +84,10 @@ export function Dialog({
             )}
             <h3 className="text-sm font-semibold text-text">{title}</h3>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-text p-0.5 -mr-0.5 transition-colors">
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-text p-0.5 -mr-0.5 transition-colors"
+          >
             <X size={14} />
           </button>
         </div>
@@ -86,9 +97,13 @@ export function Dialog({
           {/* Warning banner for danger actions */}
           {isDanger && (
             <div className="flex items-start gap-2.5 p-2.5 border border-red-600/30 bg-red-600/10">
-              <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+              <AlertTriangle
+                size={14}
+                className="text-red-500 shrink-0 mt-0.5"
+              />
               <p className="text-xs text-red-400 leading-relaxed">
-                This action is <span className="font-bold">permanent</span> and cannot be undone.
+                This action is <span className="font-bold">permanent</span> and
+                cannot be undone.
               </p>
             </div>
           )}
@@ -101,7 +116,9 @@ export function Dialog({
           )}
 
           {description && (
-            <p className="text-xs text-text/70 leading-relaxed">{description}</p>
+            <p className="text-xs text-text/70 leading-relaxed">
+              {description}
+            </p>
           )}
 
           {showInput && (

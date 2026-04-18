@@ -55,7 +55,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-[200] min-w-[160px] bg-bg border border-border py-1 flex flex-col"
+      className="fixed z-200 min-w-[160px] bg-bg border border-border py-1 flex flex-col"
       style={{ left: position.left, top: position.top }}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -79,18 +79,25 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         </button>
       ))}
     </div>,
-    document.body
+    document.body,
   );
 }
 
 export function useContextMenu() {
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    items: ContextMenuItem[];
+  } | null>(null);
 
-  const showContextMenu = useCallback((e: React.MouseEvent | MouseEvent, items: ContextMenuItem[]) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, items });
-  }, []);
+  const showContextMenu = useCallback(
+    (e: React.MouseEvent | MouseEvent, items: ContextMenuItem[]) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({ x: e.clientX, y: e.clientY, items });
+    },
+    [],
+  );
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
