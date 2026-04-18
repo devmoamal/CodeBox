@@ -1,7 +1,11 @@
 import { logger } from "@/lib/logger";
 import { z } from "zod";
+import { join, resolve } from "node:path";
 
 const isProduction = process.env.NODE_ENV === "production";
+
+// Get the root directory of the server
+const serverRoot = resolve(import.meta.dirname, "../..");
 
 const envSchema = z.object({
   // Environment

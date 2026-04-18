@@ -15,7 +15,13 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: Number(env.VITE_APP_PORT) || 80,
+      port: Number(env.VITE_APP_PORT) || 5173,
+      proxy: {
+        "/api": {
+          target: `http://localhost:${env.VITE_SERVER_PORT || 3000}`,
+          changeOrigin: true,
+        },
+      },
     },
     preview: {
       allowedHosts: true,

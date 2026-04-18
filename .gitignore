@@ -22,5 +22,6 @@ storage/
 # Drizzle
 drizzle/meta/
 
-# Bun
-bun.lockb
+# Ai
+prompts.md
+changes*  
