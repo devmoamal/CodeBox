@@ -76,7 +76,7 @@ export function ProjectPage() {
   }, [isTerminalVisible, terminalPanel]);
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-bg font-sans overflow-hidden select-none text-text">
+    <div className="h-screen w-screen flex flex-col bg-bg font-sans overflow-hidden text-text">
       <Topbar projectName={project?.name} isLoading={isLoading} />
 
       <div className="flex-1 flex min-h-0 bg-bg overflow-hidden">
@@ -87,7 +87,12 @@ export function ProjectPage() {
           <Group
             orientation="horizontal"
             className="h-full"
-            defaultLayout={panelLayouts["horizontal-main"] ?? { sidebar: 22, "main-content": 78 }}
+            defaultLayout={
+              panelLayouts["horizontal-main"] ?? {
+                sidebar: 22,
+                "main-content": 78,
+              }
+            }
             onLayoutChanged={(layout) =>
               setPanelLayout("horizontal-main", layout)
             }
@@ -111,7 +116,12 @@ export function ProjectPage() {
               <Group
                 orientation="vertical"
                 className="h-full"
-                defaultLayout={panelLayouts["vertical-editor-terminal"] ?? { editor: 65, terminal: 35 }}
+                defaultLayout={
+                  panelLayouts["vertical-editor-terminal"] ?? {
+                    editor: 65,
+                    terminal: 35,
+                  }
+                }
                 onLayoutChanged={(layout) =>
                   setPanelLayout("vertical-editor-terminal", layout)
                 }
