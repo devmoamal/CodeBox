@@ -1,21 +1,21 @@
-import { useUIStore, Theme } from "@/store/uiStore";
+import { useAppStore, Theme } from "@/store";
 import { Palette, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 const THEMES: { id: Theme; name: string }[] = [
-  { id: "theme-CodeBox-light", name: "CodeBox Light" },
-  { id: "theme-CodeBox-dark", name: "CodeBox Dark" },
-  { id: "theme-dracula", name: "Dracula" },
-  { id: "theme-one-dark", name: "One Dark" },
-  { id: "theme-nord", name: "Nord" },
-  { id: "theme-github-dark", name: "GitHub Dark" },
-  { id: "theme-solarized-dark", name: "Solarized Dark" },
-  { id: "theme-solarized-light", name: "Solarized Light" },
-  { id: "theme-coffee", name: "Coffee" },
+  { id: "CodeBox-light", name: "CodeBox Light" },
+  { id: "CodeBox-dark", name: "CodeBox Dark" },
+  { id: "dracula", name: "Dracula" },
+  { id: "one-dark", name: "One Dark" },
+  { id: "nord", name: "Nord" },
+  { id: "github-dark", name: "GitHub Dark" },
+  { id: "solarized-dark", name: "Solarized Dark" },
+  { id: "solarized-light", name: "Solarized Light" },
+  { id: "coffee", name: "Coffee" },
 ];
 
 export function ThemeSwitcher({ className = "" }: { className?: string }) {
-  const { theme, setTheme } = useUIStore();
+  const { theme, setTheme } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 

@@ -55,7 +55,7 @@ const getInitialTheme = (): Theme => {
     const saved = localStorage.getItem("theme") as Theme;
     if (saved) return saved;
   }
-  return "CodeBox-dark";
+  return "CodeBox-light";
 };
 
 const getInitialFontSize = (): number => {
@@ -266,20 +266,11 @@ export const useAppStore = create<AppState>()(
   })),
 );
 
-// Apply theme to document
+// Apply theme class to the whole document so all pages/components inherit CSS variables
 useAppStore.subscribe(
   (state) => state.theme,
   (theme) => {
-    // Remove all theme classes
-    document.documentElement.className = "";
-    document.documentElement.classList.add(`theme-${theme}`);
-
-    // Only explicitly-light themes get the 'light' class
-    if (theme.includes("light")) {
-      document.documentElement.classList.add("light");
-    } else {
-      document.documentElement.classList.remove("light");
-    }
+    document.documentElement.className = `theme-${theme}`;
   },
   { fireImmediately: true },
 );
