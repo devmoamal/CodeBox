@@ -12,7 +12,7 @@
     "db:push": "bunx drizzle-kit push",
     "db:studio": "bunx drizzle-kit studio",
     "test": "bun test --preload ./tests/setup.ts",
-    "start": "bun run db:push && bun run src/index.ts"
+    "start": "bun run db:drop && bun run db:migrate && bun run src/index.ts"
   },
   "dependencies": {
     "@codebox/shared": "workspace:*",

@@ -2,7 +2,8 @@ import { defineConfig } from "drizzle-kit";
 import fs from "node:fs";
 import path from "node:path";
 
-const databaseUrl = process.env.DATABASE_URL ?? "file:./storage/database/codebox.db";
+const databaseUrl =
+  process.env.DATABASE_URL ?? "file:./storage/database/codebox.db";
 const dbPath = databaseUrl.replace(/^file:/, "");
 const dbDir = path.dirname(dbPath);
 
@@ -18,4 +19,3 @@ export default defineConfig({
     url: databaseUrl,
   },
 });
-
