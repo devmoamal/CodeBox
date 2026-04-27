@@ -52,15 +52,13 @@ export function SearchSidebar({ projectId }: { projectId: string }) {
         if (matchCase) params.matchCase = "true";
         if (wholeWord) params.wholeWord = "true";
 
-        const response = await apiClient.get<unknown, { ok: boolean; data: SearchResult[] }>(
+        const data = await apiClient.get<SearchResult[]>(
           `/projects/${projectId}/search`,
           { params }
         );
 
-        if (response.ok) {
-          const grouped = groupResults(response.data || []);
-          setResults(grouped);
-        }
+        const grouped = groupResults(data || []);
+        setResults(grouped);
       } catch (error) {
         console.error("Search failed:", error);
       } finally {
