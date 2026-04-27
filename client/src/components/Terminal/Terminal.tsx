@@ -16,209 +16,210 @@ interface TerminalProps {
   projectId: string;
 }
 
-export function Terminal({ projectId }: TerminalProps) {
-  const terminalRef = useRef<HTMLDivElement>(null);
-  const xtermRef = useRef<XTerm | null>(null);
-  const socketRef = useRef<WebSocket | null>(null);
+function buildWsUrl(projectId: string): string {
+  const token = localStorage.getItem("token") ?? "";
+  const base =
+    import.meta.env.VITE_WS_URL ??
+    `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:3000/api`;
+  return `${base}/terminal/${projectId}?token=${encodeURIComponent(token)}`;
+}
 
-  const isMounted = useRef(true);
-  const fitAddonRef = useRef<FitAddon | null>(null);
-  const { theme, toggleTerminal, terminalFontSize, setTerminalFontSize } = useAppStore();
-  const [isConnected, setIsConnected] = useState(false);
+export function Terminal({ projectId }: TerminalProps) {
+  const mountRef = useRef<HTMLDivElement>(null);
+
+  const termRef = useRef<XTerm | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const aliveRef = useRef(true);
+
+  const { theme, toggleTerminal, terminalFontSize, setTerminalFontSize } =
+    useAppStore();
+  const [connected, setConnected] = useState(false);
   const queryClient = useQueryClient();
 
-  const refit = () => {
-    const fitAddon = fitAddonRef.current;
-    const socket = socketRef.current;
-    if (!fitAddon) return;
+  const sendResize = () => {
     try {
-      fitAddon.fit();
-      const dims = fitAddon.proposeDimensions();
-      if (dims && socket?.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
+      fitRef.current?.fit();
+      const dims = fitRef.current?.proposeDimensions();
+      if (dims && wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }),
+        );
       }
-    } catch (e) { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const zoomIn = () => {
     const next = Math.min(MAX_FONT, terminalFontSize + 1);
     setTerminalFontSize(next);
-    if (xtermRef.current) {
-      xtermRef.current.options.fontSize = next;
-      setTimeout(refit, 0);
+    if (termRef.current) {
+      termRef.current.options.fontSize = next;
+      setTimeout(sendResize, 0);
     }
   };
 
   const zoomOut = () => {
     const next = Math.max(MIN_FONT, terminalFontSize - 1);
     setTerminalFontSize(next);
-    if (xtermRef.current) {
-      xtermRef.current.options.fontSize = next;
-      setTimeout(refit, 0);
+    if (termRef.current) {
+      termRef.current.options.fontSize = next;
+      setTimeout(sendResize, 0);
     }
   };
 
   useEffect(() => {
-    isMounted.current = true;
-    let term: XTerm | null = null;
-    let socket: WebSocket | null = null;
-    let fitAddon: FitAddon | null = null;
-    let resizeObserver: ResizeObserver | null = null;
+    aliveRef.current = true;
 
-    const initTerminal = () => {
-      if (!isMounted.current || !terminalRef.current || xtermRef.current)
-        return;
-      if (terminalRef.current.offsetWidth === 0) return;
+    if (!mountRef.current) return;
 
-      term = new XTerm({
-        cursorBlink: true,
-        fontSize: useAppStore.getState().terminalFontSize,
-        fontWeight: "400",
-        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
-        theme: getTerminalTheme(theme),
-        allowProposedApi: true,
-      });
+    // Create xterm. Use convertEol: true as fallback.
+    const term = new XTerm({
+      cursorBlink: true,
+      fontSize: useAppStore.getState().terminalFontSize,
+      fontFamily:
+        "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+      theme: getTerminalTheme(useAppStore.getState().theme),
+      allowProposedApi: true,
+      convertEol: true,
+      scrollback: 5000,
+    });
 
-      fitAddon = new FitAddon();
-      term.loadAddon(fitAddon);
-      term.loadAddon(new WebLinksAddon());
-      fitAddonRef.current = fitAddon;
+    const fit = new FitAddon();
+    term.loadAddon(fit);
+    term.loadAddon(new WebLinksAddon());
 
-      term.open(terminalRef.current);
-      xtermRef.current = term;
+    term.open(mountRef.current);
+    termRef.current = term;
+    fitRef.current = fit;
 
-      const getWsURL = () => {
-        const envUrl = import.meta.env.VITE_WS_URL;
-        if (envUrl && envUrl.startsWith("ws")) return envUrl;
-        const { protocol, hostname } = window.location;
-        const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
-        return `${wsProtocol}//${hostname}:3000/api`;
-      };
-      const wsUrl = getWsURL();
-      const token = localStorage.getItem("token");
-      socket = new WebSocket(`${wsUrl}/terminal/${projectId}${token ? `?token=${token}` : ""}`);
-      socketRef.current = socket;
-
-      socket.onopen = () => {
-        if (!isMounted.current || !fitAddon || !socket) return;
-        setIsConnected(true);
+    requestAnimationFrame(() => {
+      if (!aliveRef.current) return;
+      try {
+        fit.fit();
+      } catch {
+        /**/
+      }
+      term.focus();
+      setTimeout(() => {
+        if (!aliveRef.current) return;
         try {
-          fitAddon.fit();
-          const dims = fitAddon.proposeDimensions();
-          if (dims && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
-          }
-
-          const pendingCommand = useAppStore.getState().terminalCommand;
-          if (pendingCommand && socket.readyState === WebSocket.OPEN) {
-            socket.send(pendingCommand + "\r");
-            setTimeout(() => useAppStore.getState().sendTerminalCommand(""), 0);
-          }
-        } catch (e) { /* ignore */ }
-      };
-
-      socket.onmessage = (event) => {
-        if (!isMounted.current || !term) return;
-        const data = event.data.toString();
-        if (data.startsWith("__CB_STATUS__:")) {
-          const status = data.split(":")[1];
-          useAppStore.getState().setIsRunning(status === "running");
-          return;
+          fit.fit();
+        } catch {
+          /**/
         }
-        if (data === "__CB_FS_CHANGED__") {
-          queryClient.invalidateQueries({ queryKey: ["fs", projectId] });
-          return;
-        }
-        term.write(data);
-      };
+        term.focus();
+      }, 100);
+    });
 
-      socket.onclose = () => {
-        if (isMounted.current && xtermRef.current === term) {
-          setIsConnected(false);
-          term?.writeln("\r\n\x1b[31m[System] Terminal Disconnected\x1b[0m");
-        }
-      };
+    const ws = new WebSocket(buildWsUrl(projectId));
+    wsRef.current = ws;
 
-      term.onData((data) => {
-        if (isMounted.current && socket?.readyState === WebSocket.OPEN) {
-          socket.send(data);
-        }
-      });
+    ws.onopen = () => {
+      if (!aliveRef.current) return;
+      setConnected(true);
+      sendResize();
+      term.focus();
+
+      const cmd = useAppStore.getState().terminalCommand;
+      if (cmd) {
+        ws.send(cmd + "\r");
+        setTimeout(() => useAppStore.getState().sendTerminalCommand(""), 0);
+      }
     };
 
-    resizeObserver = new ResizeObserver(() => {
-      if (!isMounted.current || !terminalRef.current) return;
+    ws.onmessage = (e) => {
+      if (!aliveRef.current) return;
+      const data = String(e.data);
+      if (data.startsWith("__CB_STATUS__:")) {
+        useAppStore.getState().setIsRunning(data.split(":")[1] === "running");
+        return;
+      }
+      if (data === "__CB_FS_CHANGED__") {
+        queryClient.invalidateQueries({ queryKey: ["fs", projectId] });
+        return;
+      }
+      // Write to terminal
+      term.write(data);
+    };
 
-      if (!xtermRef.current) {
-        initTerminal();
-      } else if (fitAddon && socket?.readyState === WebSocket.OPEN) {
-        try {
-          fitAddon.fit();
-          const dims = fitAddon.proposeDimensions();
-          if (dims) {
-            socket.send(JSON.stringify({ type: "resize", cols: dims.cols, rows: dims.rows }));
-          }
-        } catch (e) { /* ignore */ }
+    ws.onerror = () => {
+      if (aliveRef.current) setConnected(false);
+    };
+
+    ws.onclose = () => {
+      if (!aliveRef.current) return;
+      setConnected(false);
+      term.writeln("\r\n\x1b[31m[Terminal] Disconnected\x1b[0m");
+    };
+
+    term.onData((data) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(data);
       }
     });
 
-    if (terminalRef.current) {
-      resizeObserver.observe(terminalRef.current);
-    }
+    const ro = new ResizeObserver(() => {
+      if (!aliveRef.current) return;
+      sendResize();
+    });
+    ro.observe(mountRef.current!);
 
-    const unsubscribe = useAppStore.subscribe(
-      (state) => state.terminalCommand,
-      (command: string | null) => {
-        if (isMounted.current && command && socket?.readyState === WebSocket.OPEN) {
-          socket.send(command + "\r");
+    const unsub = useAppStore.subscribe(
+      (s) => s.terminalCommand,
+      (cmd) => {
+        if (
+          aliveRef.current &&
+          cmd &&
+          wsRef.current?.readyState === WebSocket.OPEN
+        ) {
+          wsRef.current.send(cmd + "\r");
           setTimeout(() => useAppStore.getState().sendTerminalCommand(""), 0);
         }
       },
     );
 
     return () => {
-      isMounted.current = false;
-      resizeObserver?.disconnect();
-      unsubscribe();
-      if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
-        socket.close();
+      aliveRef.current = false;
+      ro.disconnect();
+      unsub();
+      if (
+        ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING
+      ) {
+        ws.close();
       }
-      if (term) term.dispose();
-      xtermRef.current = null;
-      fitAddonRef.current = null;
-      socketRef.current = null;
+      term.dispose();
+      termRef.current = null;
+      fitRef.current = null;
+      wsRef.current = null;
     };
-  }, [projectId]);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync theme
   useEffect(() => {
-    if (xtermRef.current) {
-      xtermRef.current.options.theme = getTerminalTheme(theme);
-    }
+    if (termRef.current)
+      termRef.current.options.theme = getTerminalTheme(theme);
   }, [theme]);
 
-  // Sync terminalFontSize from store (e.g. if changed from settings elsewhere)
   useEffect(() => {
-    if (xtermRef.current) {
-      xtermRef.current.options.fontSize = terminalFontSize;
-      setTimeout(refit, 0);
+    if (termRef.current) {
+      termRef.current.options.fontSize = terminalFontSize;
+      setTimeout(sendResize, 0);
     }
-  }, [terminalFontSize]);
+  }, [terminalFontSize]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col h-full w-full bg-terminal-bg overflow-hidden">
-      {/* Header bar */}
       <div className="h-8 flex items-center px-3 shrink-0 border-b border-border bg-panel gap-2">
         <span className="text-[10px] font-bold uppercase tracking-widest text-muted flex-1">
           Terminal
         </span>
 
-        {/* Font size display */}
         <span className="text-[10px] font-mono text-muted tabular-nums w-6 text-center">
           {terminalFontSize}
         </span>
 
-        {/* Zoom out */}
         <button
           onClick={zoomOut}
           disabled={terminalFontSize <= MIN_FONT}
@@ -228,7 +229,6 @@ export function Terminal({ projectId }: TerminalProps) {
           <ZoomOut size={12} />
         </button>
 
-        {/* Zoom in */}
         <button
           onClick={zoomIn}
           disabled={terminalFontSize >= MAX_FONT}
@@ -238,13 +238,13 @@ export function Terminal({ projectId }: TerminalProps) {
           <ZoomIn size={12} />
         </button>
 
-        {/* Connection dot */}
         <div
-          className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${isConnected ? "bg-green-500" : "bg-red-500"}`}
-          title={isConnected ? "Connected" : "Disconnected"}
+          className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+            connected ? "bg-green-500" : "bg-red-500"
+          }`}
+          title={connected ? "Connected" : "Disconnected"}
         />
 
-        {/* Close */}
         <button
           onClick={toggleTerminal}
           className="p-0.5 text-muted hover:text-text transition-colors"
@@ -254,8 +254,11 @@ export function Terminal({ projectId }: TerminalProps) {
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 relative">
-        <div ref={terminalRef} className="absolute inset-0 px-2 py-1" />
+      <div
+        className="flex-1 min-h-0 relative cursor-text"
+        onClick={() => termRef.current?.focus()}
+      >
+        <div ref={mountRef} className="absolute inset-0 px-2 py-1" />
       </div>
     </div>
   );

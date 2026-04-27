@@ -25,7 +25,10 @@ export class TerminalSession {
   private historyIndex: number = -1;
   private savedCommand: string = "";
 
-  constructor(private shell: string, private options: TerminalOptions) {
+  constructor(
+    private shell: string,
+    private options: TerminalOptions,
+  ) {
     this.cwd = options.cwd;
   }
 
@@ -33,7 +36,7 @@ export class TerminalSession {
     const projectRoot = resolve(this.options.cwd);
     let rel = relative(projectRoot, this.cwd);
     if (!rel || rel === "") {
-        return `\x1b[32m#codebox ~\x1b[0m $ `;
+      return `\x1b[32m#codebox ~\x1b[0m $ `;
     }
     return `\x1b[32m#codebox ~/${rel}\x1b[0m $ `;
   }
@@ -42,7 +45,7 @@ export class TerminalSession {
     onData: (data: string) => void,
     _onExit: (exitCode: number, signal?: number) => void,
     onStatus?: (status: "running" | "idle") => void,
-    onFsChanged?: () => void
+    onFsChanged?: () => void,
   ) {
     this.onDataCallback = onData;
     this.onStatusCallback = onStatus;
@@ -81,23 +84,25 @@ export class TerminalSession {
 
   public async write(data: string) {
     if (this.activeProc) {
-        this.handleProcessInput(data);
-        return;
+      this.handleProcessInput(data);
+      return;
     }
 
     // Handle History navigation
-    if (data === "\x1b[A") { // UP
-        this.navigateHistory(-1);
-        return;
+    if (data === "\x1b[A") {
+      // UP
+      this.navigateHistory(-1);
+      return;
     }
-    if (data === "\x1b[B") { // DOWN
-        this.navigateHistory(1);
-        return;
+    if (data === "\x1b[B") {
+      // DOWN
+      this.navigateHistory(1);
+      return;
     }
 
     // Skip other ANSI escape sequences from the frontend (like left/right arrow keys)
     if (data.startsWith("\x1b")) {
-        return;
+      return;
     }
 
     await this.handleLocalShellInput(data);
@@ -107,21 +112,21 @@ export class TerminalSession {
     if (this.history.length === 0) return;
 
     if (this.historyIndex === -1) {
-        if (direction === 1) return; // already at newest
-        this.savedCommand = this.commandBuffer; // save in-progress typing
-        this.historyIndex = this.history.length - 1;
+      if (direction === 1) return; // already at newest
+      this.savedCommand = this.commandBuffer; // save in-progress typing
+      this.historyIndex = this.history.length - 1;
     } else {
-        this.historyIndex += direction;
+      this.historyIndex += direction;
     }
 
     if (this.historyIndex >= this.history.length) {
-        this.historyIndex = -1;
-        this.commandBuffer = this.savedCommand;
+      this.historyIndex = -1;
+      this.commandBuffer = this.savedCommand;
     } else if (this.historyIndex < 0) {
-        this.historyIndex = 0;
-        this.commandBuffer = this.history[0];
+      this.historyIndex = 0;
+      this.commandBuffer = this.history[0];
     } else {
-        this.commandBuffer = this.history[this.historyIndex];
+      this.commandBuffer = this.history[this.historyIndex];
     }
 
     // \x1b[2K clears the entire line. \r returns carriage to start.
@@ -131,124 +136,137 @@ export class TerminalSession {
   private handleProcessInput(data: string) {
     if (!this.activeProc) return;
 
-    if (data === "\x03") { // Ctrl-C
-        this.activeProc.kill();
-        this.procCommandBuffer = "";
-        return;
+    if (data === "\x03") {
+      // Ctrl-C
+      this.activeProc.kill();
+      this.procCommandBuffer = "";
+      return;
     }
-    
+
     for (let i = 0; i < data.length; i++) {
-        const char = data[i];
-        if (char === "\r") {
-            this.send("\r\n");
-            try {
-                this.activeProc.stdin.write(this.procCommandBuffer + "\n");
-                this.activeProc.stdin.flush();
-            } catch (e) { /* ignore */ }
-            this.procCommandBuffer = "";
-        } else if (char === "\x7f") { // Backspace
-            if (this.procCommandBuffer.length > 0) {
-                this.procCommandBuffer = this.procCommandBuffer.slice(0, -1);
-                this.send("\b \b");
-            }
-        } else if (char.length === 1 && char.charCodeAt(0) >= 32) {
-            this.procCommandBuffer += char;
-            this.send(char);
+      const char = data[i];
+      if (char === "\r") {
+        this.send("\r\n");
+        try {
+          this.activeProc.stdin.write(this.procCommandBuffer + "\n");
+          this.activeProc.stdin.flush();
+        } catch (e) {
+          /* ignore */
         }
+        this.procCommandBuffer = "";
+      } else if (char === "\x7f") {
+        // Backspace
+        if (this.procCommandBuffer.length > 0) {
+          this.procCommandBuffer = this.procCommandBuffer.slice(0, -1);
+          this.send("\b \b");
+        }
+      } else if (char.length === 1 && char.charCodeAt(0) >= 32) {
+        this.procCommandBuffer += char;
+        this.send(char);
+      }
     }
   }
 
   private handleTabCompletion() {
     if (this.commandBuffer.length === 0) return;
-    
+
     // Extract the last typed distinct word.
     const lastSpace = this.commandBuffer.lastIndexOf(" ");
-    const fragment = lastSpace === -1 ? this.commandBuffer : this.commandBuffer.slice(lastSpace + 1);
-    
+    const fragment =
+      lastSpace === -1
+        ? this.commandBuffer
+        : this.commandBuffer.slice(lastSpace + 1);
+
     if (fragment.length === 0) return; // Don't autocomplete nothing
 
     try {
-        const files = readdirSync(this.cwd);
-        const matches = files.filter(f => f.startsWith(fragment));
+      const files = readdirSync(this.cwd);
+      const matches = files.filter((f) => f.startsWith(fragment));
 
-        if (matches.length === 1) {
-            const completion = matches[0].slice(fragment.length);
-            this.commandBuffer += completion;
-            this.send(completion);
-        } else if (matches.length > 1) {
-            let i = fragment.length;
-            let commonPrefix = "";
-            while (true) {
-                if (i >= matches[0].length) break;
-                const c = matches[0][i];
-                if (matches.every(m => m[i] === c)) {
-                    commonPrefix += c;
-                    i++;
-                } else {
-                    break;
-                }
-            }
-            
-            if (commonPrefix.length > 0) {
-                this.commandBuffer += commonPrefix;
-                this.send(commonPrefix);
-            } else {
-                this.send("\r\n");
-                const formatted = matches.map(f => {
-                    const stats = statSync(join(this.cwd, f));
-                    return stats.isDirectory() ? `\x1b[1;33m${f}/\x1b[0m` : `\x1b[34m${f}\x1b[0m`;
-                }).join("  ");
-                
-                this.send(formatted + "\r\n");
-                this.send(this.promptString + this.commandBuffer);
-            }
+      if (matches.length === 1) {
+        const completion = matches[0].slice(fragment.length);
+        this.commandBuffer += completion;
+        this.send(completion);
+      } else if (matches.length > 1) {
+        let i = fragment.length;
+        let commonPrefix = "";
+        while (true) {
+          if (i >= matches[0].length) break;
+          const c = matches[0][i];
+          if (matches.every((m) => m[i] === c)) {
+            commonPrefix += c;
+            i++;
+          } else {
+            break;
+          }
         }
-    } catch(e) {
-        // ignore errors
+
+        if (commonPrefix.length > 0) {
+          this.commandBuffer += commonPrefix;
+          this.send(commonPrefix);
+        } else {
+          this.send("\r\n");
+          const formatted = matches
+            .map((f) => {
+              const stats = statSync(join(this.cwd, f));
+              return stats.isDirectory()
+                ? `\x1b[1;33m${f}/\x1b[0m`
+                : `\x1b[34m${f}\x1b[0m`;
+            })
+            .join("  ");
+
+          this.send(formatted + "\r\n");
+          this.send(this.promptString + this.commandBuffer);
+        }
+      }
+    } catch (e) {
+      // ignore errors
     }
   }
 
   private async handleLocalShellInput(data: string) {
-    if (data.length > 1 && data.includes("\r")) {
-      // Echo the whole block command if it contains a carriage return
-      this.send(data.replace("\r", ""));
-    }
-
     for (let i = 0; i < data.length; i++) {
-        const char = data[i];
+      const char = data[i];
 
-        if (char === "\r") { // Enter
-            this.send("\r\n");
-            const cmdLine = this.commandBuffer.trim();
-            
-            if (cmdLine && (this.history.length === 0 || this.history[this.history.length - 1] !== cmdLine)) {
-                this.history.push(cmdLine);
-            }
-            this.historyIndex = -1;
-            this.commandBuffer = "";
-            
-            if (cmdLine) {
-                await this.executeCommand(cmdLine);
-            } else {
-                this.writePrompt();
-            }
-        } else if (char === "\x7f") { // Backspace
-            if (this.commandBuffer.length > 0) {
-                this.commandBuffer = this.commandBuffer.slice(0, -1);
-                this.send("\b \b");
-            }
-        } else if (char === "\x03") { // Ctrl-C
-            this.commandBuffer = "";
-            this.send("^C\r\n");
-            this.writePrompt();
-        } else if (char === "\t") { // Tab
-            this.handleTabCompletion();
-        } else if (char.length === 1 && char.charCodeAt(0) >= 32) { // Printables
-            this.commandBuffer += char;
-            if (data.length === 1) {
-              this.send(char);
-            }
+      if (char === "\r") {
+        // Enter
+        this.send("\r\n");
+        const cmdLine = this.commandBuffer.trim();
+
+        if (
+          cmdLine &&
+          (this.history.length === 0 ||
+            this.history[this.history.length - 1] !== cmdLine)
+        ) {
+          this.history.push(cmdLine);
         }
+        this.historyIndex = -1;
+        this.commandBuffer = "";
+
+        if (cmdLine) {
+          await this.executeCommand(cmdLine);
+        } else {
+          this.writePrompt();
+        }
+      } else if (char === "\x7f") {
+        // Backspace
+        if (this.commandBuffer.length > 0) {
+          this.commandBuffer = this.commandBuffer.slice(0, -1);
+          this.send("\b \b");
+        }
+      } else if (char === "\x03") {
+        // Ctrl-C
+        this.commandBuffer = "";
+        this.send("^C\r\n");
+        this.writePrompt();
+      } else if (char === "\t") {
+        // Tab
+        this.handleTabCompletion();
+      } else if (char.length === 1 && char.charCodeAt(0) >= 32) {
+        // Printables
+        this.commandBuffer += char;
+        this.send(char);
+      }
     }
   }
 
@@ -278,26 +296,26 @@ export class TerminalSession {
         break;
       case "run":
         if (args.length > 0) {
-            await this.handleRun(args[0], args.slice(1));
-            return;
+          await this.handleRun(args[0], args.slice(1));
+          return;
         } else {
-            this.send("\x1b[31mUsage: run <file.py>\x1b[0m\r\n");
+          this.send("\x1b[31mUsage: run <file.py>\x1b[0m\r\n");
         }
         break;
       case "move":
       case "rename":
         if (args.length >= 2) {
-            await this.executeFileSystemOp("move", args[0], args[1]);
+          await this.executeFileSystemOp("move", args[0], args[1]);
         } else {
-            this.send("\x1b[31mUsage: move <src> <dest>\x1b[0m\r\n");
+          this.send("\x1b[31mUsage: move <src> <dest>\x1b[0m\r\n");
         }
         break;
       case "delete":
       case "rm":
         if (args.length > 0) {
-            await this.executeFileSystemOp("delete", args[0]);
+          await this.executeFileSystemOp("delete", args[0]);
         } else {
-            this.send("\x1b[31mUsage: delete <path>\x1b[0m\r\n");
+          this.send("\x1b[31mUsage: delete <path>\x1b[0m\r\n");
         }
         break;
       default:
@@ -313,12 +331,23 @@ export class TerminalSession {
     this.onStatusCallback?.("running");
     try {
       let spawnCmd = [cmd, ...args];
-      
+
       if (process.platform === "darwin") {
-        const pyArgs = JSON.stringify([cmd, ...args]);
-        const pyScript = `import pty, sys\ntry:\n    pty.spawn(${pyArgs})\nexcept FileNotFoundError:\n    sys.stdout.write("\\x1b[31mCommand not found: " + ${JSON.stringify(cmd)} + "\\x1b[0m\\r\\n")\n    sys.stdout.flush()\n    sys.exit(127)`;
-        spawnCmd = ["python3", "-c", pyScript];
+        try {
+          const hasPython3 = Bun.spawnSync(["which", "python3"]).exitCode === 0;
+          if (hasPython3) {
+            const pyArgs = JSON.stringify([cmd, ...args]);
+            const pyScript = `import pty, sys\ntry:\n    pty.spawn(${pyArgs})\nexcept Exception as e:\n    sys.stdout.write(f"\\x1b[31mError spawning: {e}\\x1b[0m\\r\\n")\n    sys.stdout.flush()\n    sys.exit(1)`;
+            spawnCmd = ["python3", "-c", pyScript];
+          }
+        } catch (e) {
+          logger.warn(
+            "Failed to check for python3, falling back to direct spawn",
+          );
+        }
       }
+
+      logger.info(`Spawning: ${spawnCmd.join(" ")}`);
 
       this.activeProc = Bun.spawn(spawnCmd, {
         cwd: this.cwd,
@@ -331,23 +360,25 @@ export class TerminalSession {
       const stderrReader = this.activeProc.stderr.getReader();
       const decoder = new TextDecoder();
 
-      const readStream = async (reader: ReadableStreamDefaultReader<Uint8Array>, color = "") => {
+      const readStream = async (
+        reader: ReadableStreamDefaultReader<Uint8Array>,
+        color = "",
+      ) => {
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             if (value) {
-                const text = decoder.decode(value).replace(/\n/g, "\r\n");
-                this.send(color + text + (color ? "\x1b[0m" : ""));
+              const text = decoder.decode(value).replace(/\n/g, "\r\n");
+              this.send(color + text + (color ? "\x1b[0m" : ""));
             }
           }
-        } catch (e) {
-        }
+        } catch (e) {}
       };
 
       await Promise.all([
         readStream(stdoutReader),
-        readStream(stderrReader, "\x1b[31m")
+        readStream(stderrReader, "\x1b[31m"),
       ]);
 
       const result = await this.activeProc.exited;
@@ -371,15 +402,17 @@ export class TerminalSession {
     try {
       const files = readdirSync(this.cwd);
       if (files.length === 0) return;
-      
-      const formatted = files.map(f => {
-        const stats = statSync(join(this.cwd, f));
-        if (stats.isDirectory()) {
+
+      const formatted = files
+        .map((f) => {
+          const stats = statSync(join(this.cwd, f));
+          if (stats.isDirectory()) {
             return `\x1b[1;33m${f}/\x1b[0m`;
-        }
-        return `\x1b[34m${f}\x1b[0m`;
-      }).join("  ");
-      
+          }
+          return `\x1b[34m${f}\x1b[0m`;
+        })
+        .join("  ");
+
       this.send(formatted + "\r\n");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -390,10 +423,10 @@ export class TerminalSession {
   private handleCd(args: string[]) {
     const target = args[0] || ".";
     const newPath = this.resolveSecurePath(target);
-    
+
     if (!newPath) {
-        this.send("\x1b[31mAccess denied\x1b[0m\r\n");
-        return;
+      this.send("\x1b[31mAccess denied\x1b[0m\r\n");
+      return;
     }
 
     if (existsSync(newPath) && statSync(newPath).isDirectory()) {
@@ -405,14 +438,14 @@ export class TerminalSession {
 
   private handleCat(args: string[]) {
     if (args.length === 0) {
-        this.send("\x1b[31mUsage: cat <file>\x1b[0m\r\n");
-        return;
+      this.send("\x1b[31mUsage: cat <file>\x1b[0m\r\n");
+      return;
     }
     try {
       const fullPath = this.resolveSecurePath(args[0]);
       if (!fullPath) {
-          this.send("\x1b[31mAccess denied\x1b[0m\r\n");
-          return;
+        this.send("\x1b[31mAccess denied\x1b[0m\r\n");
+        return;
       }
 
       if (existsSync(fullPath) && statSync(fullPath).isFile()) {
@@ -430,42 +463,46 @@ export class TerminalSession {
   private async handleRun(file: string, args: string[]) {
     const fullPath = this.resolveSecurePath(file);
     if (!fullPath) {
-        this.send("\x1b[31mAccess denied\x1b[0m\r\n");
-        this.onStatusCallback?.("idle");
-        this.writePrompt();
-        return;
+      this.send("\x1b[31mAccess denied\x1b[0m\r\n");
+      this.onStatusCallback?.("idle");
+      this.writePrompt();
+      return;
     }
 
     if (!existsSync(fullPath)) {
-        this.send(`\x1b[31mFile not found: ${file}\x1b[0m\r\n`);
-        this.onStatusCallback?.("idle");
-        this.writePrompt();
-        return;
+      this.send(`\x1b[31mFile not found: ${file}\x1b[0m\r\n`);
+      this.onStatusCallback?.("idle");
+      this.writePrompt();
+      return;
     }
 
     // Try python3 then fallback to python
     let pythonCmd = "python3";
     try {
-        const check = Bun.spawnSync(["which", "python3"]);
-        if (check.exitCode !== 0) {
-            pythonCmd = "python";
-        }
-    } catch (e) {
+      const check = Bun.spawnSync(["which", "python3"]);
+      if (check.exitCode !== 0) {
         pythonCmd = "python";
+      }
+    } catch (e) {
+      pythonCmd = "python";
     }
 
     this.send(`\x1b[2m[CodeBox] Running ${pythonCmd} ${file}...\x1b[0m\r\n`);
     await this.handleExternalCommand(pythonCmd, ["-u", fullPath, ...args]);
   }
 
-  private async executeFileSystemOp(type: "move" | "delete", src: string, dest?: string) {
+  private async executeFileSystemOp(
+    type: "move" | "delete",
+    src: string,
+    dest?: string,
+  ) {
     try {
       const projectRoot = resolve(this.options.cwd);
       const absSrc = this.resolveSecurePath(src);
-      
+
       if (!absSrc) {
-          this.send("\x1b[31mAccess denied for source path\x1b[0m\r\n");
-          return;
+        this.send("\x1b[31mAccess denied for source path\x1b[0m\r\n");
+        return;
       }
 
       const relSrc = relative(projectRoot, absSrc);
@@ -473,12 +510,15 @@ export class TerminalSession {
       if (type === "move" && dest) {
         const absDest = this.resolveSecurePath(dest);
         if (!absDest) {
-            this.send("\x1b[31mAccess denied for destination path\x1b[0m\r\n");
-            return;
+          this.send("\x1b[31mAccess denied for destination path\x1b[0m\r\n");
+          return;
         }
 
         const relDest = relative(projectRoot, absDest);
-        await Storage.changeFileDir(join(this.options.projectId || "", relSrc), join(this.options.projectId || "", relDest));
+        await Storage.changeFileDir(
+          join(this.options.projectId || "", relSrc),
+          join(this.options.projectId || "", relDest),
+        );
         this.send(`\x1b[2m[CodeBox] Success: ${src} -> ${dest}\x1b[0m\r\n`);
         this.onFsChangedCallback?.();
       } else if (type === "delete") {
@@ -494,24 +534,23 @@ export class TerminalSession {
 
   private showHelp() {
     const lines = [
-        "",
-        "\x1b[1m\x1b[36mCodeBox Custom Shell Commands:\x1b[0m",
-        "  \x1b[33mls\x1b[0m                List files in directory",
-        "  \x1b[33mcd <dir>\x1b[0m          Change directory",
-        "  \x1b[33mcat <file>\x1b[0m        Read file content",
-        "  \x1b[33mrun <file.py>\x1b[0m     Execute a Python script",
-        "  \x1b[33mmove <src> <dest>\x1b[0m Close or rename a file/folder",
-        "  \x1b[33mdelete <path>\x1b[0m     Delete a file or folder",
-        "  \x1b[33mclear\x1b[0m             Clear screen",
-        "  \x1b[33mhelp\x1b[0m              Show this help menu",
-        ""
+      "",
+      "\x1b[1m\x1b[36mCodeBox Custom Shell Commands:\x1b[0m",
+      "  \x1b[33mls\x1b[0m                List files in directory",
+      "  \x1b[33mcd <dir>\x1b[0m          Change directory",
+      "  \x1b[33mcat <file>\x1b[0m        Read file content",
+      "  \x1b[33mrun <file.py>\x1b[0m     Execute a Python script",
+      "  \x1b[33mmove <src> <dest>\x1b[0m Close or rename a file/folder",
+      "  \x1b[33mdelete <path>\x1b[0m     Delete a file or folder",
+      "  \x1b[33mclear\x1b[0m             Clear screen",
+      "  \x1b[33mhelp\x1b[0m              Show this help menu",
+      "",
     ];
 
     this.send(lines.join("\r\n"));
   }
 
-  public resize(_cols: number, _rows: number) {
-  }
+  public resize(_cols: number, _rows: number) {}
 
   public kill() {
     if (this.activeProc) {
