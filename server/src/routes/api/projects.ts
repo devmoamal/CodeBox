@@ -9,6 +9,7 @@ import {
   updateProjectBodySchema,
   paginationQuerySchema,
 } from "@codebox/shared";
+import { AuthVariables } from "@/middlewares/auth.middleware";
 import { Hono } from "hono";
 import { ProjectsService } from "@/services/projects.service";
 import { StorageService } from "@/services/storage.service";
@@ -16,14 +17,15 @@ import { SearchService } from "@/services/search.service";
 import { NotFoundError } from "@/lib/error";
 import Response from "@/lib/response";
 
-const router = new Hono();
+const router = new Hono<{ Variables: AuthVariables }>();
 
 /**
  * List all projects
  */
 router.get("/", validateQuery(paginationQuerySchema), async (c) => {
   const query = c.req.valid("query");
-  const projects = await ProjectsService.listAll(query);
+  const user = c.get("user");
+  const projects = await ProjectsService.listAll(user.id, query);
   return Response.success(c, projects);
 });
 
@@ -32,7 +34,8 @@ router.get("/", validateQuery(paginationQuerySchema), async (c) => {
  */
 router.get("/:project_id", validateParams(projectIdParamSchema), async (c) => {
   const { project_id } = c.req.valid("param");
-  const project = await ProjectsService.findById(project_id);
+  const user = c.get("user");
+  const project = await ProjectsService.findById(project_id, user.id);
   if (!project) throw new NotFoundError("Project not found");
   return Response.success(c, project);
 });
@@ -42,7 +45,8 @@ router.get("/:project_id", validateParams(projectIdParamSchema), async (c) => {
  */
 router.get("/:project_id/files", validateParams(projectIdParamSchema), async (c) => {
   const { project_id } = c.req.valid("param");
-  const project = await ProjectsService.findById(project_id);
+  const user = c.get("user");
+  const project = await ProjectsService.findById(project_id, user.id);
   if (!project) throw new NotFoundError("Project not found");
 
   const files = await StorageService.listAllByProjectId(project_id);
@@ -54,6 +58,10 @@ router.get("/:project_id/files", validateParams(projectIdParamSchema), async (c)
  */
 router.get("/:project_id/search", validateParams(projectIdParamSchema), async (c) => {
   const { project_id } = c.req.valid("param");
+  const user = c.get("user");
+  const project = await ProjectsService.findById(project_id, user.id);
+  if (!project) throw new NotFoundError("Project not found");
+
   const q = c.req.query("q") || "";
   const matchCase = c.req.query("matchCase") === "true";
   const wholeWord = c.req.query("wholeWord") === "true";
@@ -69,7 +77,8 @@ router.get("/:project_id/search", validateParams(projectIdParamSchema), async (c
  */
 router.post("/", validateBody(createProjectBodySchema), async (c) => {
   const data = c.req.valid("json");
-  const project = await ProjectsService.create(data);
+  const user = c.get("user");
+  const project = await ProjectsService.create({ ...data, user_id: user.id });
   return Response.success(c, project, "Project created successfully", 201);
 });
 
@@ -83,8 +92,9 @@ router.put(
   async (c) => {
     const { project_id } = c.req.valid("param");
     const data = c.req.valid("json");
+    const user = c.get("user");
 
-    const project = await ProjectsService.update(project_id, data);
+    const project = await ProjectsService.update(project_id, user.id, data);
     if (!project) throw new NotFoundError("Project not found");
 
     return Response.success(c, project, "Project updated successfully");
@@ -96,10 +106,15 @@ router.put(
  */
 router.delete("/:project_id", validateParams(projectIdParamSchema), async (c) => {
   const { project_id } = c.req.valid("param");
+  const user = c.get("user");
   
+  // Verify project belongs to user before deletion
+  const project = await ProjectsService.findById(project_id, user.id);
+  if (!project) throw new NotFoundError("Project not found");
+
   // Cleanup project records and files
   await StorageService.deleteAll(project_id);
-  const deleted = await ProjectsService.delete(project_id);
+  const deleted = await ProjectsService.delete(project_id, user.id);
   
   if (!deleted) throw new NotFoundError("Project not found");
 

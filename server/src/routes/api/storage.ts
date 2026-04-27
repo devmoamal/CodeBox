@@ -3,6 +3,7 @@ import {
   validateParams,
   validateQuery,
 } from "@/middlewares/validate.middleware";
+import { AuthVariables } from "@/middlewares/auth.middleware";
 import { Hono } from "hono";
 import {
   FileBodySchema,
@@ -14,7 +15,7 @@ import { StorageService } from "@/services/storage.service";
 import { BadRequestError, NotFoundError } from "@/lib/error";
 import Response from "@/lib/response";
 
-const router = new Hono();
+const router = new Hono<{ Variables: AuthVariables }>();
 
 /**
  * List files for a project or get a specific file's content.

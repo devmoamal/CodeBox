@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { projectsTable } from "@/db/schema";
 import { NewProject, Project, UpdateProject } from "@/db/types";
-import { eq, count } from "drizzle-orm";
+import { eq, count, and } from "drizzle-orm";
 import { PaginationParams } from "@codebox/shared";
 
 export class ProjectsRepository {
@@ -13,47 +13,53 @@ export class ProjectsRepository {
     return project;
   }
 
-  async findById(id: string): Promise<Project | undefined> {
+  async findById(id: string, user_id: string): Promise<Project | undefined> {
     const [project] = await db
       .select()
       .from(projectsTable)
-      .where(eq(projectsTable.id, id))
+      .where(and(eq(projectsTable.id, id), eq(projectsTable.user_id, user_id)))
       .limit(1);
     return project;
   }
 
-  async listAll({
-    page,
-    limit,
-  }: PaginationParams): Promise<{ data: Project[]; total: number }> {
+  async listAll(
+    user_id: string,
+    { page, limit }: PaginationParams
+  ): Promise<{ data: Project[]; total: number }> {
     const offset = (page - 1) * limit;
 
     const data = await db
       .select()
       .from(projectsTable)
+      .where(eq(projectsTable.user_id, user_id))
       .limit(limit)
       .offset(offset);
 
     const [totalCount] = await db
       .select({ value: count() })
-      .from(projectsTable);
+      .from(projectsTable)
+      .where(eq(projectsTable.user_id, user_id));
 
-    return { data, total: totalCount.value };
+    return { data, total: totalCount.value || 0 };
   }
 
-  async update(id: string, data: UpdateProject): Promise<Project | undefined> {
+  async update(
+    id: string,
+    user_id: string,
+    data: UpdateProject
+  ): Promise<Project | undefined> {
     const [project] = await db
       .update(projectsTable)
       .set(data)
-      .where(eq(projectsTable.id, id))
+      .where(and(eq(projectsTable.id, id), eq(projectsTable.user_id, user_id)))
       .returning();
     return project;
   }
 
-  async delete(id: string): Promise<Project | undefined> {
+  async delete(id: string, user_id: string): Promise<Project | undefined> {
     const [project] = await db
       .delete(projectsTable)
-      .where(eq(projectsTable.id, id))
+      .where(and(eq(projectsTable.id, id), eq(projectsTable.user_id, user_id)))
       .returning();
     return project;
   }

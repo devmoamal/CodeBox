@@ -1,5 +1,4 @@
-import { apiClient } from "@/lib/api";
-import { SuccessResponse } from "@codebox/shared";
+import api from "@/lib/api";
 
 export interface RunResult {
   stdout: string;
@@ -9,10 +8,8 @@ export interface RunResult {
 
 export const RunnerService = {
   run: async (projectId: string, path: string): Promise<RunResult> => {
-    const response = await apiClient.post<unknown, SuccessResponse<RunResult>>(`/runner/${projectId}/run`, null, {
+    return api.post<RunResult>(`/runner/${projectId}/run`, null, {
       params: { path },
     });
-    if (!response.data) throw new Error("Execution failed with no result");
-    return response.data;
   },
 };

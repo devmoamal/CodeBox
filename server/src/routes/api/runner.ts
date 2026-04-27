@@ -4,8 +4,9 @@ import { projectIdParamSchema, FileQuerySchema, API_ERROR_CODE } from "@codebox/
 import { RunnerService } from "@/services/runner.service";
 import Response from "@/lib/response";
 import { logger } from "@/lib/logger";
+import { AuthVariables } from "@/middlewares/auth.middleware";
 
-const router = new Hono();
+const router = new Hono<{ Variables: AuthVariables }>();
 
 /**
  * Execute a python file in a project

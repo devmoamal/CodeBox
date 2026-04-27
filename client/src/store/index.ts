@@ -3,17 +3,16 @@ import { subscribeWithSelector } from "zustand/middleware";
 
 export type SidebarTab = "files" | "search" | "git" | "settings";
 
-export type Theme = 
-  | "doobox-dark" 
-  | "doobox-light" 
-  | "dracula" 
-  | "one-dark" 
-  | "nord" 
-  | "github-dark" 
-  | "solarized-dark" 
+export type Theme =
+  | "CodeBox-dark"
+  | "CodeBox-light"
+  | "dracula"
+  | "one-dark"
+  | "nord"
+  | "github-dark"
+  | "solarized-dark"
   | "solarized-light"
   | "coffee";
-
 
 interface AppState {
   activeFilePath: string | null;
@@ -56,7 +55,7 @@ const getInitialTheme = (): Theme => {
     const saved = localStorage.getItem("theme") as Theme;
     if (saved) return saved;
   }
-  return "doobox-dark";
+  return "CodeBox-dark";
 };
 
 const getInitialFontSize = (): number => {
@@ -95,7 +94,8 @@ const getInitialLayouts = (): Record<string, Record<string, number>> => {
         const vET = parsed["vertical-editor-terminal"];
         // Validate all values are in the 0-100 percentage range
         if (
-          hMain && vET &&
+          hMain &&
+          vET &&
           isValidLayoutValue(hMain["sidebar"]) &&
           isValidLayoutValue(hMain["main-content"]) &&
           isValidLayoutValue(vET["editor"]) &&
@@ -112,7 +112,6 @@ const getInitialLayouts = (): Record<string, Record<string, number>> => {
   }
   return DEFAULT_LAYOUTS;
 };
-
 
 const getInitialSidebarVisible = (): boolean => {
   if (typeof window !== "undefined") {
@@ -195,7 +194,9 @@ export const useAppStore = create<AppState>()(
       set((state) => {
         const pathSet = new Set(paths);
         const newOpenFiles = state.openFiles.filter((f) => !pathSet.has(f));
-        const newUnsaved = new Set([...state.unsavedFiles].filter(p => !pathSet.has(p)));
+        const newUnsaved = new Set(
+          [...state.unsavedFiles].filter((p) => !pathSet.has(p)),
+        );
         return {
           openFiles: newOpenFiles,
           unsavedFiles: newUnsaved,
@@ -272,7 +273,7 @@ useAppStore.subscribe(
     // Remove all theme classes
     document.documentElement.className = "";
     document.documentElement.classList.add(`theme-${theme}`);
-    
+
     // Only explicitly-light themes get the 'light' class
     if (theme.includes("light")) {
       document.documentElement.classList.add("light");
