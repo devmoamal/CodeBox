@@ -87,7 +87,14 @@ export function Terminal({ projectId }: TerminalProps) {
       term.open(terminalRef.current);
       xtermRef.current = term;
 
-      const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3000/api`;
+      const getWsURL = () => {
+        const envUrl = import.meta.env.VITE_WS_URL;
+        if (envUrl && envUrl.startsWith("ws")) return envUrl;
+        const { protocol, hostname } = window.location;
+        const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
+        return `${wsProtocol}//${hostname}:3000/api`;
+      };
+      const wsUrl = getWsURL();
       const token = localStorage.getItem("token");
       socket = new WebSocket(`${wsUrl}/terminal/${projectId}${token ? `?token=${token}` : ""}`);
       socketRef.current = socket;

@@ -9,8 +9,23 @@ export interface ApiClient extends AxiosInstance {
   patch<T = any>(url: string, data?: any, config?: any): Promise<T>;
 }
 
+const getBaseURL = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && envUrl.startsWith("http")) {
+    return envUrl;
+  }
+  
+  // Dynamic fallback for Raspberry Pi / Network deployments
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:3000/api`;
+  }
+  
+  return envUrl || "/api";
+};
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}`,
+  baseURL: getBaseURL(),
 }) as ApiClient;
 
 api.interceptors.request.use((config) => {
