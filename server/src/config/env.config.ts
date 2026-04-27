@@ -21,6 +21,9 @@ const envSchema = z.object({
 
   // Storage
   STORAGE_PATH: z.string().min(1).default("./storage/projects"),
+
+  // Auth
+  JWT_SECRET: z.string().min(1).default("development_secret_do_not_use_in_production"),
 });
 
 const parse = envSchema.safeParse(process.env);

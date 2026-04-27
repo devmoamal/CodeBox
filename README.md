@@ -1,3 +1,3 @@
 # Code Box
 
-Lightweight presonal python code editor for quick coding and testing and AI coding assistant.
+Lightweight presonal python code editor for quick coding and testing.

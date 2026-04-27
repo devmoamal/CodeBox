@@ -5,8 +5,10 @@ import { loggerMiddleware } from "@/middlewares/logger.middleware";
 import { NotFoundError } from "@/lib/error";
 import { Hono } from "hono";
 
+import { AuthVariables } from "@/middlewares/auth.middleware";
+
 // Hono app that start with Bun
-export const app = new Hono();
+export const app = new Hono<{ Variables: AuthVariables }>();
 
 // Middlewares
 
