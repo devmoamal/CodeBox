@@ -19,9 +19,7 @@ export function FileExplorerHeader({
 }: FileExplorerHeaderProps) {
   return (
     <div className="h-10 flex items-center px-4 shrink-0 border-b border-border bg-panel">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-muted">
-        Explorer
-      </span>
+      <span className="text-xs font-medium text-muted">Explorer</span>
       <div className="flex gap-2 ml-auto">
         <RefreshCcw
           size={14}

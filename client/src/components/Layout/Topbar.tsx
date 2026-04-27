@@ -27,7 +27,7 @@ export function Topbar({ projectName, isLoading }: TopbarProps) {
         </Link>
 
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-bold tracking-widest uppercase text-text">
+          <span className="text-[11px] font-semibold text-text">
             CodeBox
           </span>
           <span className="text-border text-xs">·</span>
@@ -57,16 +57,12 @@ export function Topbar({ projectName, isLoading }: TopbarProps) {
         {isSaving ? (
           <div className="flex items-center gap-1.5">
             <Loader2 size={10} className="animate-spin text-muted" />
-            <span className="text-[10px] font-medium text-muted uppercase tracking-wide">
-              Saving
-            </span>
+            <span className="text-[10px] text-muted">Saving</span>
           </div>
         ) : activeFilePath ? (
           <div className="flex items-center gap-1.5">
-            <CheckCheck size={10} className="text-muted opacity-50" />
-            <span className="text-[10px] text-muted opacity-50 uppercase tracking-wide">
-              Saved
-            </span>
+            <CheckCheck size={10} className="text-muted opacity-40" />
+            <span className="text-[10px] text-muted opacity-40">Saved</span>
           </div>
         ) : null}
       </div>

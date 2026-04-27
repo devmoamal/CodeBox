@@ -3,8 +3,8 @@ import { Palette, Type, ChevronDown, Check } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 const themes: { id: Theme; name: string; bg: string; fg: string }[] = [
-  { id: "doobox-dark", name: "DooBox Dark", bg: "#000000", fg: "#F8FAFC" },
-  { id: "doobox-light", name: "DooBox Light", bg: "#FFFFFF", fg: "#111827" },
+  { id: "CodeBox-dark", name: "CodeBox Dark", bg: "#000000", fg: "#F8FAFC" },
+  { id: "CodeBox-light", name: "CodeBox Light", bg: "#FFFFFF", fg: "#111827" },
   { id: "dracula", name: "Dracula", bg: "#282a36", fg: "#f8f8f2" },
   { id: "one-dark", name: "One Dark", bg: "#282c34", fg: "#abb2bf" },
   { id: "nord", name: "Nord", bg: "#2e3440", fg: "#d8dee9" },
@@ -151,7 +151,9 @@ export function SettingsSidebar() {
               onClick={() => setFontDropdownOpen((o) => !o)}
               className="w-full flex items-center gap-2 p-2 border border-border bg-bg hover:border-muted transition-colors"
             >
-              <span className="text-xs font-mono text-text flex-1 text-left">{fontSize}px</span>
+              <span className="text-xs font-mono text-text flex-1 text-left">
+                {fontSize}px
+              </span>
               <ChevronDown
                 size={12}
                 className={`text-muted shrink-0 transition-transform ${fontDropdownOpen ? "rotate-180" : ""}`}
@@ -166,7 +168,10 @@ export function SettingsSidebar() {
                   return (
                     <button
                       key={s}
-                      onClick={() => { setFontSize(s); setFontDropdownOpen(false); }}
+                      onClick={() => {
+                        setFontSize(s);
+                        setFontDropdownOpen(false);
+                      }}
                       className={`w-full flex items-center justify-between px-3 py-2 transition-colors ${
                         isActive
                           ? "bg-primary-subtle text-primary"

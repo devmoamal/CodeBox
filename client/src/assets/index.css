@@ -5,7 +5,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-subtle: var(--primary-subtle);
-  
+
   --color-bg: var(--bg);
   --color-panel: var(--panel);
   --color-border: var(--border);
@@ -17,47 +17,47 @@
   --color-terminal-bg: var(--terminal-bg);
 
   /* Coffee theme accent (defined here for completeness) */
-  --color-coffee-accent: #C8873A;
+  --color-coffee-accent: #c8873a;
 }
 
 @layer base {
   :root {
-    --primary: #2563EB;
-    --primary-hover: #1D4ED8;
-    --primary-subtle: #EFF6FF;
-    
-    --bg: #FFFFFF;
-    --panel: #FAFAFA;
-    --border: #E5E7EB;
-    --text: #111827;
-    --muted: #6B7280;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-subtle: #eff6ff;
 
-    --editor-bg: #FFFFFF;
-    --terminal-bg: #F8FAFC;
+    --bg: #ffffff;
+    --panel: #fafafa;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+
+    --editor-bg: #ffffff;
+    --terminal-bg: #f8fafc;
   }
 
-  /* 1. DooBox Dark (Strict Black) */
-  .theme-doobox-dark {
+  /* 1. CodeBox Dark (Strict Black) */
+  .theme-CodeBox-dark {
     --bg: #000000;
-    --panel: #0A0A0A;
-    --border: #1F1F1F;
-    --text: #F8FAFC;
-    --muted: #71717A;
+    --panel: #0a0a0a;
+    --border: #1f1f1f;
+    --text: #f8fafc;
+    --muted: #71717a;
     --primary-subtle: rgba(37, 99, 235, 0.15);
     --editor-bg: #000000;
     --terminal-bg: #000000;
   }
 
-  /* 2. DooBox Light (Strict White) */
-  .theme-doobox-light {
-    --bg: #FFFFFF;
-    --panel: #FAFAFA;
-    --border: #E5E7EB;
+  /* 2. CodeBox Light (Strict White) */
+  .theme-CodeBox-light {
+    --bg: #ffffff;
+    --panel: #fafafa;
+    --border: #e5e7eb;
     --text: #111827;
-    --muted: #6B7280;
-    --primary-subtle: #EFF6FF;
-    --editor-bg: #FFFFFF;
-    --terminal-bg: #F8FAFC;
+    --muted: #6b7280;
+    --primary-subtle: #eff6ff;
+    --editor-bg: #ffffff;
+    --terminal-bg: #f8fafc;
   }
 
   /* 3. Dracula */
@@ -146,33 +146,54 @@
 
   /* 9. Coffee */
   .theme-coffee {
-    --bg: #1C1410;
-    --panel: #231A13;
-    --border: #3D2B1A;
-    --text: #E8D5B7;
-    --muted: #8B7355;
-    --primary: #C8873A;
-    --primary-hover: #D4944A;
+    --bg: #1c1410;
+    --panel: #231a13;
+    --border: #3d2b1a;
+    --text: #e8d5b7;
+    --muted: #8b7355;
+    --primary: #c8873a;
+    --primary-hover: #d4944a;
     --primary-subtle: rgba(200, 135, 58, 0.12);
-    --editor-bg: #1C1410;
-    --terminal-bg: #160F0A;
+    --editor-bg: #1c1410;
+    --terminal-bg: #160f0a;
   }
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100vh;
   width: 100vw;
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Force theme text color on all form elements (prevents black text in dark themes) */
+input,
+textarea,
+select {
+  color: var(--text);
+  background-color: var(--bg);
+}
+
 /* Smooth micro-interactions on all interactive elements */
-button, [role="button"], a, input, select {
-  transition: color 0.1s ease, background-color 0.1s ease, border-color 0.1s ease, opacity 0.1s ease;
+button,
+[role="button"],
+a,
+input,
+select {
+  transition:
+    color 0.1s ease,
+    background-color 0.1s ease,
+    border-color 0.1s ease,
+    opacity 0.1s ease;
 }
 
 /* Scrollbar refinement */
@@ -192,7 +213,9 @@ button, [role="button"], a, input, select {
 }
 
 /* All buttons show hand cursor */
-button, [role="button"], a {
+button,
+[role="button"],
+a {
   cursor: pointer;
 }
 
@@ -207,9 +230,26 @@ button, [role="button"], a {
 
 /* Unsaved file indicator dot animation */
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 .unsaved-dot {
   animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }

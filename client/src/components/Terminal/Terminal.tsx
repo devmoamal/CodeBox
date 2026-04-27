@@ -88,7 +88,8 @@ export function Terminal({ projectId }: TerminalProps) {
       xtermRef.current = term;
 
       const wsUrl = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:3000/api`;
-      socket = new WebSocket(`${wsUrl}/terminal/${projectId}`);
+      const token = localStorage.getItem("token");
+      socket = new WebSocket(`${wsUrl}/terminal/${projectId}${token ? `?token=${token}` : ""}`);
       socketRef.current = socket;
 
       socket.onopen = () => {
