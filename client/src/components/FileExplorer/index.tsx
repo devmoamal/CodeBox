@@ -116,11 +116,13 @@ export function FileExplorer({ projectId }: { projectId: string }) {
 
   const handleDragOver = (e: React.DragEvent, path: string | null) => {
     e.preventDefault();
-    setDragOverPath(path);
+    e.stopPropagation();
+    setDragOverPath(path || "root");
   };
 
   const handleDrop = (e: React.DragEvent, targetPath: string | null) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverPath(null);
     const sourcePath = e.dataTransfer.getData("sourcePath");
     const externalFiles = e.dataTransfer.files;
@@ -176,9 +178,16 @@ export function FileExplorer({ projectId }: { projectId: string }) {
       />
 
       <div
-        className="flex-1 overflow-auto py-1"
+        className={`flex-1 overflow-auto py-1 transition-all duration-200 ${
+          dragOverPath === "root" ? "bg-primary/10 ring-2 ring-inset ring-primary/50" : ""
+        }`}
         onDragOver={(e) => handleDragOver(e, null)}
         onDrop={(e) => handleDrop(e, null)}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragOverPath(null);
+        }}
       >
         {isLoading ? (
           <div className="px-4 py-2 text-xs text-muted font-mono uppercase">

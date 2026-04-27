@@ -22,8 +22,8 @@ interface FileTreeNodeProps {
   onAction: (type: FileActionType, path: string) => void;
   onContextMenu: (e: React.MouseEvent, items: any[]) => void;
   onDragStart: (e: React.DragEvent, path: string) => void;
-  onDragOver: (e: React.DragEvent, path: string) => void;
-  onDrop: (e: React.DragEvent, path: string) => void;
+  onDragOver: (e: React.DragEvent, path: string | null) => void;
+  onDrop: (e: React.DragEvent, path: string | null) => void;
 }
 
 export function FileTreeNode({
@@ -75,13 +75,23 @@ export function FileTreeNode({
     <div
       draggable
       onDragStart={(e) => onDragStart(e, node.path)}
-      onDragOver={(e) => isFolder && onDragOver(e, node.path)}
-      onDrop={(e) => isFolder && onDrop(e, node.path)}
-      className={`relative flex items-center gap-1.5 px-3 py-1 text-sm cursor-pointer group border-l-2 transition-colors ${
+      onDragOver={(e) => {
+        const targetPath = isFolder ? node.path : (node.path.includes("/") ? node.path.split("/").slice(0, -1).join("/") : null);
+        onDragOver(e, targetPath || "root");
+      }}
+      onDrop={(e) => {
+        const targetPath = isFolder ? node.path : (node.path.includes("/") ? node.path.split("/").slice(0, -1).join("/") : null);
+        onDrop(e, targetPath);
+      }}
+      className={`relative flex items-center gap-1.5 px-3 py-1 text-sm cursor-pointer group border-l-2 transition-all duration-200 ${
         isActive
           ? "bg-primary-subtle border-primary text-text font-medium"
           : "border-transparent text-muted hover:bg-bg hover:text-text"
-      } ${isDragOver ? "bg-primary-subtle border-primary" : ""}`}
+      } ${
+        isDragOver
+          ? "bg-primary/20 border-primary ring-1 ring-primary shadow-sm scale-[1.02] rounded-md z-10"
+          : ""
+      }`}
       style={{ paddingLeft: `${indent + 12}px` }}
       onClick={() => (isFolder ? onToggle(node.path) : onOpen(node.path))}
       onContextMenu={(e) => onContextMenu(e, contextItems)}
