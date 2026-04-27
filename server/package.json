@@ -18,7 +18,6 @@
     "@codebox/shared": "workspace:*",
     "drizzle-orm": "^0.39.3",
     "hono": "^4.12.9",
-    "node-pty": "^1.1.0",
     "os-utils": "^0.0.14",
     "zod": "^4.3.6"
   },
