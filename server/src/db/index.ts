@@ -14,4 +14,3 @@ if (dbDir && !fs.existsSync(dbDir)) {
 const sqlite = new Database(dbPath);
 
 export const db = drizzle({ client: sqlite });
-
